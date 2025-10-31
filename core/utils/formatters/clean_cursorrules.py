@@ -14,7 +14,6 @@ This ensures that cursor rules files start with the proper system prompt format.
 
 import os
 import re
-from typing import Optional
 
 # ====================================================
 # Constants
@@ -69,7 +68,7 @@ def clean_cursorrules_file(file_path: str) -> tuple[bool, str]:
 # Function: clean_cursorrules
 # This function finds and cleans a .cursorrules file in the specified directory
 # ====================================================
-def clean_cursorrules(directory: Optional[str] = None) -> tuple[bool, str]:
+def clean_cursorrules(directory: str | None = None) -> tuple[bool, str]:
     """
     Find and clean a .cursorrules file in the specified directory.
 

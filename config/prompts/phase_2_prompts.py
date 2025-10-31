@@ -7,7 +7,7 @@ modifying the core logic of the agents.
 """
 
 import json
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 # Base prompt template for Phase 2 (Methodical Planning)
 PHASE_2_PROMPT = """You are a project documentation planner tasked with processing the <initial_findings>...</initial_findings> from the given <project_structure>...</project_structure> in order to:
@@ -83,7 +83,7 @@ Describe your approach or reasoning here.
 
 def format_phase2_prompt(
     phase1_results: dict,
-    project_structure: Optional[Sequence[str]] = None,
+    project_structure: Sequence[str] | None = None,
 ) -> str:
     """
     Format the Phase 2 prompt with the Phase 1 results and project structure.

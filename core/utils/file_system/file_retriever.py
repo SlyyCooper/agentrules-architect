@@ -21,7 +21,6 @@ import fnmatch
 import logging
 from collections.abc import Generator
 from pathlib import Path
-from typing import Optional
 
 from config.exclusions import EXCLUDED_DIRS, EXCLUDED_EXTENSIONS, EXCLUDED_FILES
 
@@ -129,8 +128,8 @@ def format_file_content(file_path: Path, content: str) -> str:
 
 def list_files(
     directory: Path,
-    exclude_dirs: Optional[set[str]] = None,
-    exclude_patterns: Optional[set[str]] = None,
+    exclude_dirs: set[str] | None = None,
+    exclude_patterns: set[str] | None = None,
     max_depth: int = 10,
 ) -> Generator[Path, None, None]:
     """
@@ -185,8 +184,8 @@ def list_files(
 
 def get_file_contents(
     directory: Path,
-    exclude_dirs: Optional[set[str]] = None,
-    exclude_patterns: Optional[set[str]] = None,
+    exclude_dirs: set[str] | None = None,
+    exclude_patterns: set[str] | None = None,
     max_size_kb: int = 1000,  # Don't process files larger than 1MB by default
     max_files: int = 100,  # Limit the number of files to process
 ) -> dict[str, str]:

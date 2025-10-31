@@ -5,7 +5,7 @@ This module defines the model configuration types and predefined model configura
 used throughout the CursorRules Architect system.
 """
 
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 from core.agents.base import ModelProvider, ReasoningMode
 from core.types.tool_config import ToolConfig
@@ -20,9 +20,9 @@ class ModelConfig(NamedTuple):
     provider: ModelProvider
     model_name: str
     reasoning: ReasoningMode = ReasoningMode.DISABLED
-    temperature: Optional[float] = None  # For temperature-based models like gpt-4.1
-    tools_config: Optional[ToolConfig] = None  # Tool configuration for this model
-    text_verbosity: Optional[str] = None  # GPT-5 text verbosity control
+    temperature: float | None = None  # For temperature-based models like gpt-4.1
+    tools_config: ToolConfig | None = None  # Tool configuration for this model
+    text_verbosity: str | None = None  # GPT-5 text verbosity control
 
 # ====================================================
 # Predefined Model Configurations

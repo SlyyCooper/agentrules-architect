@@ -9,11 +9,10 @@ description = "Interactive CLI for the CursorRules Architect multi-phase analysi
 readme = "README.md"
 authors = [{name = "SlyyCooper"}]
 license = {text = "MIT"}
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 keywords = ["cursor", "ai", "analysis", "cli", "agents"]
 classifiers = [
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -53,7 +52,7 @@ include = ["agentrules*", "core*", "config*"]
 
 [tool.ruff]
 line-length = 120
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
@@ -86,7 +85,7 @@ exclude = [
   ".mypy_cache",
   ".pytest_cache",
 ]
-pythonVersion = "3.9"
+pythonVersion = "3.10"
 typeCheckingMode = "standard"
 reportMissingImports = "error"
 reportMissingTypeStubs = "warning"

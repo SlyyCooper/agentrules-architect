@@ -10,7 +10,7 @@ It defines the methods needed for creating a detailed analysis plan based on Pha
 # ====================================================
 
 import logging  # Used for logging messages
-from typing import Optional, Sequence
+from collections.abc import Sequence
 
 from config.prompts.phase_2_prompts import (  # Prompts for Phase 2
     format_phase2_prompt,
@@ -55,7 +55,7 @@ class Phase2Analysis:
     # Run Method
     # Executes the methodical planning phase.
     # ====================================================
-    async def run(self, phase1_results: dict, tree: Optional[Sequence[str]] = None) -> dict:
+    async def run(self, phase1_results: dict, tree: Sequence[str] | None = None) -> dict:
         """
         Run the Methodical Planning Phase using the configured model.
 

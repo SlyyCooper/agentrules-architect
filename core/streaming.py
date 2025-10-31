@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, MutableMapping
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any
 
 
 class StreamEventType(str, Enum):
@@ -22,7 +22,7 @@ class StreamEventType(str, Enum):
     SYSTEM = "system"
 
 
-JsonMapping = Union[Mapping[str, Any], MutableMapping[str, Any]]
+JsonMapping = Mapping[str, Any] | MutableMapping[str, Any]
 
 
 @dataclass
@@ -30,9 +30,9 @@ class StreamChunk:
     """Normalized representation of a streaming payload chunk."""
 
     event_type: StreamEventType
-    text: Optional[str] = None
-    reasoning: Optional[str] = None
-    tool_call: Optional[JsonMapping] = None
-    finish_reason: Optional[str] = None
-    usage: Optional[JsonMapping] = None
-    raw: Optional[Any] = None
+    text: str | None = None
+    reasoning: str | None = None
+    tool_call: JsonMapping | None = None
+    finish_reason: str | None = None
+    usage: JsonMapping | None = None
+    raw: Any | None = None

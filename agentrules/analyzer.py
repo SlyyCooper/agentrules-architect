@@ -11,7 +11,7 @@ import asyncio
 import json
 import logging
 import time
-from typing import Optional, Sequence
+from collections.abc import Sequence
 from pathlib import Path
 
 from rich.console import Console
@@ -38,7 +38,7 @@ logger = logging.getLogger("project_extractor")
 class ProjectAnalyzer:
     """High-level coordinator for the six-phase analysis pipeline."""
 
-    def __init__(self, directory: Path, console: Optional[Console] = None):
+    def __init__(self, directory: Path, console: Console | None = None):
         self.directory = directory
         self.console = console or Console()
 
@@ -74,7 +74,7 @@ class ProjectAnalyzer:
     async def run_final_analysis(
         self,
         consolidated_report: dict,
-        tree: Optional[Sequence[str]] = None,
+        tree: Sequence[str] | None = None,
     ) -> dict:
         return await self.final_analyzer.run(consolidated_report, tree)
 
@@ -260,7 +260,7 @@ class ProjectAnalyzer:
         )
 
 
-def run_analysis(directory: Path, console: Optional[Console] = None) -> str:
+def run_analysis(directory: Path, console: Console | None = None) -> str:
     analyzer = ProjectAnalyzer(directory, console)
     loop = asyncio.new_event_loop()
     try:

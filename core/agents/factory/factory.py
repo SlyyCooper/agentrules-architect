@@ -5,8 +5,6 @@ This module provides factory functions for creating architect instances based on
 It centralizes the instantiation logic for different types of agents.
 """
 
-from typing import Optional
-
 from config.agents import MODEL_CONFIG
 from core.types.models import ModelConfig, create_researcher_config
 
@@ -66,10 +64,10 @@ class ArchitectFactory:
 
 def get_architect_for_phase(
     phase: str,
-    name: Optional[str] = None,
-    role: Optional[str] = None,
-    responsibilities: Optional[list[str]] = None,
-    prompt_template: Optional[str] = None
+    name: str | None = None,
+    role: str | None = None,
+    responsibilities: list[str] | None = None,
+    prompt_template: str | None = None
 ) -> BaseArchitect:
     """
     Get the appropriate architect for a given phase based on the MODEL_CONFIG.

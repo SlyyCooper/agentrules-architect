@@ -6,8 +6,8 @@ These prompts are used by the OpenAI agent to generate the final analysis of the
 """
 
 import json
+from collections.abc import Sequence
 from datetime import datetime
-from typing import Optional, Sequence
 
 # Prompt for the Final Analysis (OpenAI)
 FINAL_ANALYSIS_PROMPT = """
@@ -391,7 +391,7 @@ The CRS-1 specification provides a structured framework for creating effective c
 
 def format_final_analysis_prompt(
     consolidated_report: dict,
-    project_structure: Optional[Sequence[str]] = None,
+    project_structure: Sequence[str] | None = None,
 ) -> str:
     """
     Format the Final Analysis prompt with the consolidated report and project structure.

@@ -1,50 +1,52 @@
+```
 .
-├── __init__.py                # Exposes a factory function for creating architect agents.
-├── anthropic/                 # Contains the implementation for the Anthropic (Claude) agent.
-│   ├── __init__.py            # Exposes the main AnthropicArchitect class for the package.
+├── __init__.py                # Exposes a public factory function to create architect instances.
+├── anthropic/                 # Contains the implementation for the Anthropic (Claude) model provider.
+│   ├── __init__.py            # Exposes the AnthropicArchitect class for public use.
 │   ├── architect.py           # Implements the BaseArchitect interface for Anthropic models.
-│   ├── client.py              # Manages the Anthropic SDK client instance.
-│   ├── prompting.py           # Provides prompt formatting helpers for Anthropic models.
-│   ├── request_builder.py     # Constructs API request payloads for Anthropic models.
-│   ├── response_parser.py     # Parses responses from the Anthropic API.
-│   └── tooling.py             # Handles tool configuration for Anthropic models.
-├── base.py                    # Defines the abstract BaseArchitect class and common enums.
-├── deepseek/                  # Contains the implementation for the DeepSeek agent.
-│   ├── __init__.py            # Exports DeepSeekArchitect and compatibility wrappers.
+│   ├── client.py              # Manages the Anthropic SDK client instance and request execution.
+│   ├── prompting.py           # Provides prompt templating and formatting for Anthropic models.
+│   ├── request_builder.py     # Constructs API request payloads for Anthropic's Messages API.
+│   ├── response_parser.py     # Parses and normalizes responses from the Anthropic API.
+│   ├── tooling.py             # Handles tool configuration and formatting for Anthropic models.
+├── base.py                    # Defines the abstract BaseArchitect class and core enums.
+├── deepseek/                  # Contains the implementation for the DeepSeek model provider.
+│   ├── __init__.py            # Exposes the DeepSeekArchitect class and a legacy agent.
 │   ├── architect.py           # Implements the BaseArchitect interface for DeepSeek models.
-│   ├── client.py              # Manages the OpenAI-compatible DeepSeek client.
-│   ├── compat.py              # Backwards-compatible wrapper matching the legacy agent API.
-│   ├── config.py              # Provides model defaults and base URL resolution.
-│   ├── prompting.py           # Houses prompt templates and formatting helpers.
-│   ├── request_builder.py     # Prepares DeepSeek chat completion payloads.
-│   ├── response_parser.py     # Normalises DeepSeek responses.
-│   └── tooling.py             # Resolves tool configurations for DeepSeek models.
+│   ├── client.py              # Manages OpenAI SDK clients configured for DeepSeek's API endpoint.
+│   ├── compat.py              # Provides a backward-compatibility wrapper for a legacy agent class.
+│   ├── config.py              # Defines model-specific defaults and configuration for DeepSeek.
+│   ├── prompting.py           # Provides prompt templating and formatting for DeepSeek models.
+│   ├── request_builder.py     # Constructs API request payloads for DeepSeek's chat completions API.
+│   ├── response_parser.py     # Parses and normalizes responses from the DeepSeek API.
+│   ├── tooling.py             # Handles tool configuration and formatting for DeepSeek models.
 ├── factory/                   # Contains the factory for creating different architect instances.
-│   ├── __init__.py            # Exposes the main factory function.
-│   └── factory.py             # Implements the logic to create architects based on configuration.
-├── gemini/                    # Contains the implementation for the Google Gemini agent.
+│   ├── __init__.py            # Exposes the architect factory function.
+│   ├── factory.py             # Implements the factory pattern to instantiate provider-specific architects.
+├── gemini/                    # Contains the implementation for the Google Gemini model provider.
 │   ├── __init__.py            # Exposes the GeminiArchitect and legacy agent classes.
 │   ├── architect.py           # Implements the BaseArchitect interface for Gemini models.
-│   ├── client.py              # Manages the Gemini SDK client and async requests.
-│   ├── errors.py              # Defines custom exceptions for the Gemini provider.
-│   ├── legacy.py              # Provides a backward-compatible wrapper for the Gemini agent.
-│   ├── prompting.py           # Provides prompt formatting helpers for Gemini models.
-│   ├── response_parser.py     # Parses responses from the Gemini API.
-│   └── tooling.py             # Handles tool configuration for Gemini models.
-├── xai/                       # Contains the implementation for the xAI (Grok) agent.
-│   ├── __init__.py            # Exposes the XaiArchitect class.
+│   ├── client.py              # Manages the Google GenAI client and asynchronous request execution.
+│   ├── errors.py              # Defines custom exception types for the Gemini provider.
+│   ├── legacy.py              # Provides a backward-compatibility wrapper for a legacy agent class.
+│   ├── prompting.py           # Provides prompt templating and formatting for Gemini models.
+│   ├── response_parser.py     # Parses and normalizes responses from the Gemini API.
+│   ├── tooling.py             # Handles tool configuration and formatting for Gemini models.
+├── openai/                    # Contains the implementation for the OpenAI model provider.
+│   ├── __init__.py            # Exposes the OpenAIArchitect and legacy agent classes.
+│   ├── architect.py           # Implements the BaseArchitect interface for OpenAI models.
+│   ├── client.py              # Manages the OpenAI SDK client instance and request execution.
+│   ├── compat.py              # Provides a backward-compatibility wrapper for a legacy agent class.
+│   ├── config.py              # Defines model-specific defaults and configuration for OpenAI.
+│   ├── request_builder.py     # Constructs API request payloads for OpenAI's Chat and Responses APIs.
+│   ├── response_parser.py     # Parses and normalizes responses from the OpenAI API.
+├── xai/                       # Contains the implementation for the xAI (Grok) model provider.
+│   ├── __init__.py            # Exposes the XaiArchitect class for public use.
 │   ├── architect.py           # Implements the BaseArchitect interface for xAI models.
-│   ├── client.py              # Manages the OpenAI-compatible xAI client.
-│   ├── config.py              # Provides model defaults and base URL helpers.
-│   ├── prompting.py           # Houses prompt templates and formatting helpers.
-│   ├── request_builder.py     # Prepares xAI chat completion payloads.
-│   ├── response_parser.py     # Normalises xAI responses.
-│   └── tooling.py             # Resolves tool configurations for xAI models.
-└── openai/                    # Contains the implementation for the OpenAI agent.
-    ├── __init__.py            # Exposes the OpenAIArchitect and legacy agent classes.
-    ├── architect.py           # Implements the BaseArchitect interface for OpenAI models.
-    ├── client.py              # Manages the OpenAI SDK client and executes requests.
-    ├── compat.py              # Provides a backward-compatible wrapper for the OpenAI agent.
-    ├── config.py              # Defines default configurations for different OpenAI models.
-    ├── request_builder.py     # Constructs API request payloads for OpenAI models.
-    └── response_parser.py     # Parses responses from the OpenAI API.
+│   ├── client.py              # Manages OpenAI SDK clients configured for xAI's API endpoint.
+│   ├── config.py              # Defines model-specific defaults and configuration for xAI.
+│   ├── prompting.py           # Provides prompt templating and formatting for xAI models.
+│   ├── request_builder.py     # Constructs API request payloads for xAI's chat completions API.
+│   ├── response_parser.py     # Parses and normalizes responses from the xAI API.
+│   ├── tooling.py             # Handles tool configuration and formatting for xAI models.
+```

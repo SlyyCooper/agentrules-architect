@@ -19,7 +19,6 @@ import re
 import shutil
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 # ====================================================
 # Constants
@@ -96,7 +95,7 @@ def list_patterns() -> tuple[bool, str]:
 # This function creates a .cursorignore file in the specified directory,
 # populating it with saved patterns if any exist.
 # ====================================================
-def create_cursorignore(directory: Optional[str] = None) -> tuple[bool, str]:
+def create_cursorignore(directory: str | None = None) -> tuple[bool, str]:
     """Create a .cursorignore file with saved patterns if it doesn't exist.
 
     Args:
@@ -262,7 +261,7 @@ def remove_pattern(pattern: str) -> tuple[bool, str]:
 # Function: process_command
 # This function processes the command-line arguments and calls the appropriate functions.
 # ====================================================
-def process_command(args: Optional[list[str]] = None) -> tuple[bool, str]:
+def process_command(args: list[str] | None = None) -> tuple[bool, str]:
     """Process a cursorignore command.
 
     Args:

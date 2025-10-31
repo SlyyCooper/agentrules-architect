@@ -17,7 +17,7 @@ import json
 import logging
 import re
 import xml.etree.ElementTree as ET
-from typing import Union
+from typing import Any
 
 # ====================================================
 # Initialize Logger
@@ -43,7 +43,7 @@ ANALYSIS_PLAN_TAG = "analysis_plan"
 # Helper Functions
 # ====================================================
 
-def extract_from_json(data: Union[dict, str]) -> str:
+def extract_from_json(data: dict[str, Any] | str) -> str:
     """
     Extract the plan field from a JSON object or JSON string.
 
@@ -392,7 +392,7 @@ def extract_agent_fallback(content: str) -> list[dict]:
 
     return agents
 
-def parse_agents_from_phase2(input_data: Union[dict, str]) -> list[dict]:
+def parse_agents_from_phase2(input_data: dict[str, Any] | str) -> list[dict]:
     """
     Universal parser that handles any format of Phase 2 output.
 
@@ -518,7 +518,7 @@ def _log_detailed_agent_info(agents: list[dict], method: str) -> None:
 # Utility Functions
 # ====================================================
 
-def get_agent_file_mapping(phase2_output: Union[dict, str]) -> dict[str, list[str]]:
+def get_agent_file_mapping(phase2_output: dict[str, Any] | str) -> dict[str, list[str]]:
     """
     Get a mapping of agent IDs to their assigned files.
 
@@ -536,7 +536,7 @@ def get_agent_file_mapping(phase2_output: Union[dict, str]) -> dict[str, list[st
 
     return mapping
 
-def get_all_file_assignments(phase2_output: Union[dict, str]) -> list[str]:
+def get_all_file_assignments(phase2_output: dict[str, Any] | str) -> list[str]:
     """
     Get a list of all unique file paths assigned to any agent.
 

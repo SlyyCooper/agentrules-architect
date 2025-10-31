@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from rich.console import Console
 
@@ -20,7 +19,7 @@ class CliContext:
         self.console.print(*args, **kwargs)
 
 
-def mask_secret(value: Optional[str]) -> str:
+def mask_secret(value: str | None) -> str:
     """Return a masked representation of a secret for safe display."""
 
     if not value:

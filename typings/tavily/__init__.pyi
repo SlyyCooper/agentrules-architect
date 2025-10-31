@@ -1,4 +1,4 @@
-from typing import Any, Literal, Optional, TypedDict
+from typing import Any, Literal, TypedDict
 
 SearchDepth = Literal["basic", "advanced"]
 
@@ -13,8 +13,8 @@ class AsyncTavilyClient:
         query: str,
         search_depth: SearchDepth = "basic",
         max_results: int = 5,
-        include_images: Optional[bool] = ...,
-        include_raw_content: Optional[bool] = ...,
+        include_images: bool | None = ...,
+        include_raw_content: bool | None = ...,
     ) -> SearchResponse: ...
 
 __all__ = ["AsyncTavilyClient", "SearchDepth", "SearchResponse"]

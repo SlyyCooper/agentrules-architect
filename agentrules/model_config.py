@@ -5,8 +5,8 @@ Helpers for mapping user configuration to model presets.
 from __future__ import annotations
 
 import os
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
-from typing import Dict, Iterable, Optional
 
 from agentrules.config_service import (
     PROVIDER_ENV_MAP,
@@ -67,17 +67,17 @@ def get_phase_title(phase: str) -> str:
     return PHASE_TITLES.get(phase, phase.title())
 
 
-def get_default_preset_key(phase: str) -> Optional[str]:
+def get_default_preset_key(phase: str) -> str | None:
     return agent_settings.MODEL_PRESET_DEFAULTS.get(phase)
 
 
-def get_preset_info(key: str) -> Optional[PresetInfo]:
+def get_preset_info(key: str) -> PresetInfo | None:
     return PRESET_INFOS.get(key)
 
 
 def get_available_presets_for_phase(
     phase: str,
-    provider_keys: Optional[Dict[str, Optional[str]]] = None,
+    provider_keys: Mapping[str, str | None] | None = None,
 ) -> list[PresetInfo]:
     provider_keys = provider_keys or get_current_provider_keys()
     default_key = get_default_preset_key(phase)
@@ -97,9 +97,9 @@ def get_available_presets_for_phase(
     return available
 
 
-def get_active_presets(overrides: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+def get_active_presets(overrides: Mapping[str, str] | None = None) -> dict[str, str]:
     overrides = overrides or get_model_overrides()
-    active: Dict[str, str] = {}
+    active: dict[str, str] = {}
     for phase in PHASE_SEQUENCE:
         override = overrides.get(phase)
         if override is not None:
@@ -112,13 +112,13 @@ def get_active_presets(overrides: Optional[Dict[str, str]] = None) -> Dict[str, 
     return active
 
 
-def apply_user_overrides(overrides: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+def apply_user_overrides(overrides: Mapping[str, str] | None = None) -> dict[str, str]:
     """
     Apply user-selected model presets to the global MODEL_CONFIG.
     Returns the applied preset mapping for further inspection.
     """
     overrides = overrides or get_model_overrides()
-    applied: Dict[str, str] = {}
+    applied: dict[str, str] = {}
 
     # reset to defaults first
     for phase, preset_key in agent_settings.MODEL_PRESET_DEFAULTS.items():
@@ -130,7 +130,7 @@ def apply_user_overrides(overrides: Optional[Dict[str, str]] = None) -> Dict[str
     for phase, preset_key in overrides.items():
         if phase not in agent_settings.MODEL_PRESET_DEFAULTS:
             continue
-        override_preset: Optional[PresetDefinition] = agent_settings.MODEL_PRESETS.get(preset_key)
+        override_preset: PresetDefinition | None = agent_settings.MODEL_PRESETS.get(preset_key)
         if override_preset is None:
             continue
         agent_settings.MODEL_CONFIG[phase] = override_preset["config"]
@@ -139,7 +139,7 @@ def apply_user_overrides(overrides: Optional[Dict[str, str]] = None) -> Dict[str
     return applied
 
 
-def _provider_available(provider_slug: str, provider_keys: Dict[str, Optional[str]]) -> bool:
+def _provider_available(provider_slug: str, provider_keys: Mapping[str, str | None]) -> bool:
     # first check persisted keys
     if provider_keys.get(provider_slug):
         return True

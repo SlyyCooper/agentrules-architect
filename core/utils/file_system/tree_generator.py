@@ -19,9 +19,6 @@ import fnmatch  # Provides support for Unix shell-style wildcards
 from pathlib import (
     Path,  # Offers a way to interact with files and directories in a more object-oriented manner
 )
-from typing import (  # Used for type hinting, making code easier to understand
-    Optional,
-)
 
 from config.exclusions import (  # Importing predefined exclusion lists
     EXCLUDED_DIRS,
@@ -164,8 +161,8 @@ def should_exclude(item: Path, exclude_dirs: set[str], exclude_patterns: set[str
 def generate_tree(
     path: Path,
     prefix: str = "",
-    exclude_dirs: Optional[set[str]] = None,
-    exclude_patterns: Optional[set[str]] = None,
+    exclude_dirs: set[str] | None = None,
+    exclude_patterns: set[str] | None = None,
     max_depth: int = 4,
     current_depth: int = 0
 ) -> list[str]:

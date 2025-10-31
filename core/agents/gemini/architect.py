@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from collections.abc import AsyncIterator, Iterator
-from typing import Any, Optional
+from typing import Any
 
 from google.genai import types as genai_types
 
@@ -314,7 +314,7 @@ class GeminiArchitect(BaseArchitect):
         self,
         client: Any,
         prompt: str,
-        config: Optional[genai_types.GenerateContentConfig],
+        config: genai_types.GenerateContentConfig | None,
     ) -> Iterator[StreamChunk]:
         stream = client.models.generate_content_stream(
             model=self.model_name,

@@ -4,7 +4,7 @@ Lightweight fake response objects that mimic vendor SDK shapes used in the code.
 These keep tests fully offline and stable without incurring API charges.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 # -------------------------------
 # OpenAI / DeepSeek (OpenAI-style)
@@ -24,7 +24,7 @@ class _ToolCallFake:
 
 
 class _MessageFake:
-    def __init__(self, content: Optional[str], tool_calls: Optional[list[_ToolCallFake]] = None, reasoning_content: Optional[str] = None) -> None:
+    def __init__(self, content: str | None, tool_calls: list[_ToolCallFake] | None = None, reasoning_content: str | None = None) -> None:
         self.content = content
         self.tool_calls = tool_calls or []
         # DeepSeek reasoner extension
@@ -38,12 +38,12 @@ class _ChoiceFake:
 
 
 class OpenAIChatCompletionFake:
-    def __init__(self, content: Optional[str] = "Hello", tool_calls: Optional[list[_ToolCallFake]] = None) -> None:
+    def __init__(self, content: str | None = "Hello", tool_calls: list[_ToolCallFake] | None = None) -> None:
         self.choices = [_ChoiceFake(_MessageFake(content=content, tool_calls=tool_calls))]
 
 
 class DeepSeekChatCompletionFake:
-    def __init__(self, content: Optional[str] = "Hi from DeepSeek", tool_calls: Optional[list[_ToolCallFake]] = None, reasoning: Optional[str] = None) -> None:
+    def __init__(self, content: str | None = "Hi from DeepSeek", tool_calls: list[_ToolCallFake] | None = None, reasoning: str | None = None) -> None:
         self.choices = [_ChoiceFake(_MessageFake(content=content, tool_calls=tool_calls, reasoning_content=reasoning))]
 
 
@@ -75,7 +75,7 @@ class _AnthropicToolUseBlock:
 
 
 class AnthropicMessageCreateResponseFake:
-    def __init__(self, text: Optional[str] = None, tool_call: Optional[_AnthropicToolUseBlock] = None) -> None:
+    def __init__(self, text: str | None = None, tool_call: _AnthropicToolUseBlock | None = None) -> None:
         blocks: list[Any] = []
         if text is not None:
             blocks.append(_AnthropicTextBlock(text))
@@ -95,7 +95,7 @@ class _FunctionCallFake:
 
 
 class _PartFake:
-    def __init__(self, text: Optional[str] = None, function_call: Optional[_FunctionCallFake] = None) -> None:
+    def __init__(self, text: str | None = None, function_call: _FunctionCallFake | None = None) -> None:
         self.text = text
         self.function_call = function_call
 
@@ -111,7 +111,7 @@ class _CandidateFake:
 
 
 class GeminiGenerateContentResponseFake:
-    def __init__(self, text: Optional[str] = None, function_call: Optional[_FunctionCallFake] = None) -> None:
+    def __init__(self, text: str | None = None, function_call: _FunctionCallFake | None = None) -> None:
         # Some responses provide `.text`; others require reading from parts
         self.text = text or ""
         parts = []

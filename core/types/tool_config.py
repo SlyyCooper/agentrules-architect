@@ -5,7 +5,7 @@ This module defines tool configurations and types for model agent tools.
 It provides standard types for defining tools across different model providers.
 """
 
-from typing import Any, Optional, TypedDict
+from typing import Any, TypedDict
 
 
 class ToolFunction(TypedDict):
@@ -22,15 +22,15 @@ class Tool(TypedDict):
 class ToolConfig(TypedDict):
     """Configuration for tools to be used by models."""
     enabled: bool
-    tools: Optional[list[Tool]]
+    tools: list[Tool] | None
 
 # Provider-specific tool sets
 class ToolSets(TypedDict):
     """Tool sets defined for different phases."""
-    PHASE_1_TOOLS: Optional[list[Tool]]
-    PHASE_2_TOOLS: Optional[list[Tool]]
-    PHASE_3_TOOLS: Optional[list[Tool]]
-    PHASE_4_TOOLS: Optional[list[Tool]]
-    PHASE_5_TOOLS: Optional[list[Tool]]
-    FINAL_TOOLS: Optional[list[Tool]]
-    RESEARCHER_TOOLS: Optional[list[Tool]]
+    PHASE_1_TOOLS: list[Tool] | None
+    PHASE_2_TOOLS: list[Tool] | None
+    PHASE_3_TOOLS: list[Tool] | None
+    PHASE_4_TOOLS: list[Tool] | None
+    PHASE_5_TOOLS: list[Tool] | None
+    FINAL_TOOLS: list[Tool] | None
+    RESEARCHER_TOOLS: list[Tool] | None

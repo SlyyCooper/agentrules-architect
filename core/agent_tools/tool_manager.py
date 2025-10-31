@@ -5,7 +5,7 @@ Central manager for tool definitions and provider-specific conversions.
 """
 
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Any
 
 from core.agents.base import ModelProvider
 from core.types.tool_config import Tool
@@ -18,7 +18,7 @@ class ToolManager:
 
     @staticmethod
     def get_provider_tools(
-        tools: Optional[Sequence[Tool]],
+        tools: Sequence[Tool] | None,
         provider: ModelProvider
     ) -> list[Any]:
         """

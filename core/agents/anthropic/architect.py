@@ -257,16 +257,36 @@ class AnthropicArchitect(BaseArchitect):
                     if delta_type == "text_delta":
                         text = getattr(delta, "text", None)
                         if text:
-                            yield StreamChunk(StreamEventType.TEXT_DELTA, str(text), None, None, None, None, event)
+                            yield StreamChunk(
+                                StreamEventType.TEXT_DELTA,
+                                str(text),
+                                None,
+                                None,
+                                None,
+                                None,
+                                event,
+                            )
                         continue
 
                     if delta_type == "thinking_delta":
                         thinking = getattr(delta, "thinking", None)
                         if thinking:
-                            yield StreamChunk(StreamEventType.REASONING_DELTA, None, str(thinking), None, None, None, event)
+                            yield StreamChunk(
+                                StreamEventType.REASONING_DELTA,
+                                None,
+                                str(thinking),
+                                None,
+                                None,
+                                None,
+                                event,
+                            )
                         continue
 
-                    if delta_type == "input_json_delta" and isinstance(index_obj, int) and index_obj in active_tool_inputs:
+                    if (
+                        delta_type == "input_json_delta"
+                        and isinstance(index_obj, int)
+                        and index_obj in active_tool_inputs
+                    ):
                         partial = getattr(delta, "partial_json", None)
                         if partial:
                             active_tool_inputs[index_obj]["buffer"].append(partial)

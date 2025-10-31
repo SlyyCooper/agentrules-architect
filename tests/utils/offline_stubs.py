@@ -8,7 +8,7 @@ tool call to exercise the tool execution path.
 """
 
 from types import ModuleType
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from core.agents.base import BaseArchitect, ModelProvider, ReasoningMode
 
@@ -21,11 +21,11 @@ class DummyArchitect(BaseArchitect):
         provider: ModelProvider = ModelProvider.OPENAI,
         model_name: str = "offline-dummy",
         reasoning: ReasoningMode = ReasoningMode.DISABLED,
-        name: Optional[str] = None,
-        role: Optional[str] = None,
-        responsibilities: Optional[list[str]] = None,
-        prompt_template: Optional[str] = None,
-        tools_config: Optional[dict] = None,
+        name: str | None = None,
+        role: str | None = None,
+        responsibilities: list[str] | None = None,
+        prompt_template: str | None = None,
+        tools_config: dict | None = None,
     ) -> None:
         super().__init__(
             provider=provider,
@@ -38,7 +38,7 @@ class DummyArchitect(BaseArchitect):
         )
         self.prompt_template = prompt_template or ""
 
-    async def analyze(self, context: dict[str, Any], tools: Optional[list[Any]] = None) -> dict[str, Any]:
+    async def analyze(self, context: dict[str, Any], tools: list[Any] | None = None) -> dict[str, Any]:
         agent_name = self.name or "Dummy Architect"
         print(f"[offline] analyze called for: {agent_name}")
         # For the researcher, emit a Tavily tool call so Phase 1 can exercise tool execution.
@@ -64,7 +64,7 @@ class DummyArchitect(BaseArchitect):
             "findings": f"Offline analysis by {agent_name}",
         }
 
-    async def create_analysis_plan(self, phase1_results: dict, prompt: Optional[str] = None) -> dict:
+    async def create_analysis_plan(self, phase1_results: dict, prompt: str | None = None) -> dict:
         print("[offline] create_analysis_plan called")
         # Try to load canned XML plan for Phase 3 test; fallback to tiny inline plan
         plan = None
@@ -84,16 +84,16 @@ class DummyArchitect(BaseArchitect):
             )
         return {"plan": plan}
 
-    async def synthesize_findings(self, phase3_results: dict, prompt: Optional[str] = None) -> dict:
+    async def synthesize_findings(self, phase3_results: dict, prompt: str | None = None) -> dict:
         print("[offline] synthesize_findings called")
         return {"analysis": "Offline synthesis of agent findings"}
 
-    async def final_analysis(self, consolidated_report: dict, prompt: Optional[str] = None) -> dict:
+    async def final_analysis(self, consolidated_report: dict, prompt: str | None = None) -> dict:
         print("[offline] final_analysis called")
         # Begin with "You are" so clean_cursorrules checker passes
         return {"analysis": "You are an offline final analysis assistant. Provide concise Cursor rules."}
 
-    async def consolidate_results(self, all_results: dict, prompt: Optional[str] = None) -> dict:
+    async def consolidate_results(self, all_results: dict, prompt: str | None = None) -> dict:
         print("[offline] consolidate_results called")
         return {"phase": "Consolidation", "report": "Offline consolidated report"}
 
@@ -104,7 +104,7 @@ def patch_factory_offline() -> None:
     from config.agents import MODEL_CONFIG
     from core.agents.factory import factory as fact
 
-    def _make_dummy(name: Optional[str], role: Optional[str], responsibilities: Optional[list[str]]):
+    def _make_dummy(name: str | None, role: str | None, responsibilities: list[str] | None):
         # Provider selection is irrelevant offline; keep provider/model_name values presentable.
         model_config = next(iter(MODEL_CONFIG.values()))
         return DummyArchitect(
@@ -118,10 +118,10 @@ def patch_factory_offline() -> None:
 
     def get_architect_for_phase_stub(
         phase: str,
-        name: Optional[str] = None,
-        role: Optional[str] = None,
-        responsibilities: Optional[list[str]] = None,
-        prompt_template: Optional[str] = None,
+        name: str | None = None,
+        role: str | None = None,
+        responsibilities: list[str] | None = None,
+        prompt_template: str | None = None,
     ) -> BaseArchitect:
         agent_name = name or f"{phase.title()} Architect (Offline)"
         agent_role = role or "analyzing the project offline"
@@ -131,24 +131,24 @@ def patch_factory_offline() -> None:
         name: str,
         role: str,
         responsibilities: list[str],
-        prompt_template: Optional[str] = None,
+        prompt_template: str | None = None,
     ) -> BaseArchitect:
         # Ensure name contains Researcher to trigger tool call generation
         return _make_dummy(name or "Researcher Agent", role or "research", responsibilities)
 
     # Patch both the module-level factory functions and the package-level re-exports
     fact_module: ModuleType = cast(ModuleType, fact)
-    setattr(fact_module, "get_architect_for_phase", get_architect_for_phase_stub)
-    setattr(fact_module, "get_researcher_architect", get_researcher_architect_stub)
+    fact_module.get_architect_for_phase = get_architect_for_phase_stub  # type: ignore[attr-defined]
+    fact_module.get_researcher_architect = get_researcher_architect_stub  # type: ignore[attr-defined]
     # Re-exported by core.agents and core.agents.factory package __init__
     try:
-        setattr(agents_pkg, "get_architect_for_phase", get_architect_for_phase_stub)
+        agents_pkg.get_architect_for_phase = get_architect_for_phase_stub  # type: ignore[attr-defined]
     except Exception:
         pass
     try:
         # Package-level attribute
         from core.agents import factory as factory_pkg  # type: ignore
-        setattr(factory_pkg, "get_architect_for_phase", get_architect_for_phase_stub)
+        factory_pkg.get_architect_for_phase = get_architect_for_phase_stub  # type: ignore[attr-defined]
     except Exception:
         pass
 
@@ -167,6 +167,6 @@ def patch_factory_offline() -> None:
         if not module:
             continue
         if hasattr(module, "get_architect_for_phase"):
-            setattr(module, "get_architect_for_phase", get_architect_for_phase_stub)
+            module.get_architect_for_phase = get_architect_for_phase_stub  # type: ignore[attr-defined]
         if module_name == "core.analysis.phase_1" and hasattr(module, "get_researcher_architect"):
-            setattr(module, "get_researcher_architect", get_researcher_architect_stub)
+            module.get_researcher_architect = get_researcher_architect_stub  # type: ignore[attr-defined]

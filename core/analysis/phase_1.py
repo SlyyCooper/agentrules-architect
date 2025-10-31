@@ -12,7 +12,9 @@ It defines the agents and methods needed for the initial exploration of the proj
 
 import asyncio  # For running asynchronous tasks concurrently.
 import json  # For handling JSON data.
-from typing import Any, Optional, Sequence  # For type hinting.
+import logging  # For logging information about the execution
+from collections.abc import Sequence  # For type hinting.
+from typing import Any
 
 from config.prompts.phase_1_prompts import (  # Prompts used for configuring the agents in Phase 1.
     DEPENDENCY_AGENT_PROMPT,
@@ -22,14 +24,13 @@ from config.prompts.phase_1_prompts import (  # Prompts used for configuring the
     TECH_STACK_AGENT_PROMPT,
 )
 from config.tools import TOOL_SETS
-from core.types.tool_config import Tool
 from core.agents.factory.factory import get_architect_for_phase, get_researcher_architect
+from core.types.tool_config import Tool
 
 try:
     from core.agent_tools.web_search.tavily import run_tavily_search as _run_tavily_search
 except Exception:
     _run_tavily_search = None
-import logging  # For logging information about the execution
 
 # ====================================================
 # Phase 1 Analysis Class
@@ -149,7 +150,7 @@ class Phase1Analysis:
     async def _run_researcher_with_tools(
         self,
         research_context: dict[str, Any],
-        researcher_tools: Optional[Sequence[Tool]]
+        researcher_tools: Sequence[Tool] | None
     ) -> dict[str, Any]:
         """Execute the researcher architect, completing tool loops when required."""
 
