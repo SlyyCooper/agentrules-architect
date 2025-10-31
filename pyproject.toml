@@ -77,6 +77,7 @@ indent-style = "space"
 
 [tool.pyright]
 include = ["agentrules", "core", "config", "main.py", "tests"]
+extraPaths = ["typings"]
 exclude = [
   "build",
   "dist",
@@ -90,3 +91,5 @@ typeCheckingMode = "standard"
 reportMissingImports = "error"
 reportMissingTypeStubs = "warning"
 disableBytesTypePromotions = true
+venvPath = "."
+venv = ".venv_agentrules"

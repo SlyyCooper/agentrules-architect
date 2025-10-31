@@ -34,7 +34,7 @@ class OfflineSmokeTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_researcher_tool_call(self):
         # Researcher: should emit a tool call
-        arch = factory.get_researcher_architect('Researcher Agent', 'research docs', ['find docs'], prompt_template=None)
+        arch = factory.get_researcher_architect('Researcher Agent', 'research docs', ['find docs'], prompt_template="")
         res = await arch.analyze({'dependencies': {}}, tools=[{'type':'function','function':{'name':'tavily_web_search','description':'','parameters':{'type':'object','properties':{}}}}])
         # Either tool_calls or function_calls present depending on provider; stub uses tool_calls
         self.assertTrue('tool_calls' in res or 'function_calls' in res)

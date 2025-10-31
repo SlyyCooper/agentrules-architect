@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import time
+from typing import Optional, Sequence
 from pathlib import Path
 
 from rich.console import Console
@@ -58,11 +59,11 @@ class ProjectAnalyzer:
     async def run_phase1(self, tree: list[str], package_info: dict) -> dict:
         return await self.phase1_analyzer.run(tree, package_info)
 
-    async def run_phase2(self, phase1_results: dict, tree: list[str]) -> dict:
+    async def run_phase2(self, phase1_results: dict, tree: Sequence[str]) -> dict:
         return await self.phase2_analyzer.run(phase1_results, tree)
 
-    async def run_phase3(self, analysis_plan: dict, tree: list[str]) -> dict:
-        return await self.phase3_analyzer.run(analysis_plan, tree, self.directory)
+    async def run_phase3(self, analysis_plan: dict, tree: Sequence[str]) -> dict:
+        return await self.phase3_analyzer.run(analysis_plan, list(tree), self.directory)
 
     async def run_phase4(self, phase3_results: dict) -> dict:
         return await self.phase4_analyzer.run(phase3_results)
@@ -70,7 +71,11 @@ class ProjectAnalyzer:
     async def run_phase5(self, all_results: dict) -> dict:
         return await self.phase5_analyzer.run(all_results)
 
-    async def run_final_analysis(self, consolidated_report: dict, tree: list[str] | None = None) -> dict:
+    async def run_final_analysis(
+        self,
+        consolidated_report: dict,
+        tree: Optional[Sequence[str]] = None,
+    ) -> dict:
         return await self.final_analyzer.run(consolidated_report, tree)
 
     async def analyze(self) -> str:

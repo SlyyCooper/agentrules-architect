@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, cast
 
 import pytest
 
@@ -19,7 +20,7 @@ async def test_phase2_fallback_agents_from_assignments(monkeypatch):
             return {"plan": "<analysis_plan><file_assignments><file_path>a.py</file_path></file_assignments></analysis_plan>"}
 
     p2 = Phase2Analysis()
-    p2.architect = ArchStub()
+    p2.architect = cast(Any, ArchStub())
     out = await p2.run({"phase": 1}, ["a.py"])
     assert "agents" in out and len(out["agents"]) >= 1
     assert out["agents"][0]["file_assignments"] == ["a.py"]
@@ -47,7 +48,7 @@ async def test_phase5_fallback_report_shaping(monkeypatch):
             return {"findings": "Y"}
 
     p5 = Phase5Analysis()
-    p5.architect = ArchStub()
+    p5.architect = cast(Any, ArchStub())
     out = await p5.run({"phase1": {}, "phase2": {}, "phase3": {}, "phase4": {}})
     assert out["phase"] == "Consolidation"
     assert out["report"] == "Y"
@@ -77,4 +78,3 @@ async def test_final_analysis_lazy_factory_success_and_error(monkeypatch):
     fa2 = FinalAnalysis()
     out2 = await fa2.run({"report": "R"}, ["."])
     assert "error" in out2
-

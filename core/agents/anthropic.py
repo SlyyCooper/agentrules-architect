@@ -263,7 +263,7 @@ class AnthropicArchitect(BaseArchitect):
         Returns:
             Dictionary containing the analysis plan
         """
-        context = {"phase1_results": phase1_results}
+        context: dict[str, Any] = {"phase1_results": phase1_results}
         if prompt:
             context["formatted_prompt"] = prompt
         result = await self.analyze(context)
@@ -290,7 +290,7 @@ class AnthropicArchitect(BaseArchitect):
         Returns:
             Dictionary containing the synthesis
         """
-        context = {"phase3_results": phase3_results}
+        context: dict[str, Any] = {"phase3_results": phase3_results}
         if prompt:
             context["formatted_prompt"] = prompt
         result = await self.analyze(context)
@@ -317,7 +317,7 @@ class AnthropicArchitect(BaseArchitect):
         Returns:
             Dictionary containing the final analysis
         """
-        context = {"consolidated_report": consolidated_report}
+        context: dict[str, Any] = {"consolidated_report": consolidated_report}
         if prompt:
             context["formatted_prompt"] = prompt
         result = await self.analyze(context)

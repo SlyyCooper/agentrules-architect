@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from typing import Iterable, Optional
 
 from agentrules.config_service import (
     PROVIDER_ENV_MAP,
@@ -13,6 +14,7 @@ from agentrules.config_service import (
     get_model_overrides,
 )
 from config import agents as agent_settings
+from config.agents import PresetDefinition
 from core.agents.base import ModelProvider
 
 PHASE_TITLES: dict[str, str] = {
@@ -44,15 +46,21 @@ class PresetInfo:
         return _provider_display_name(self.provider)
 
 
-PRESET_INFOS: dict[str, PresetInfo] = {
-    key: PresetInfo(
-        key=key,
-        label=meta["label"],
-        description=meta["description"],
-        provider=meta["provider"],
-    )
-    for key, meta in agent_settings.MODEL_PRESETS.items()
-}
+def _build_preset_infos(
+    presets: Iterable[tuple[str, PresetDefinition]],
+) -> dict[str, PresetInfo]:
+    info_map: dict[str, PresetInfo] = {}
+    for key, meta in presets:
+        info_map[key] = PresetInfo(
+            key=key,
+            label=meta["label"],
+            description=meta["description"],
+            provider=meta["provider"],
+        )
+    return info_map
+
+
+PRESET_INFOS: dict[str, PresetInfo] = _build_preset_infos(agent_settings.MODEL_PRESETS.items())
 
 
 def get_phase_title(phase: str) -> str:
@@ -93,7 +101,14 @@ def get_active_presets(overrides: dict[str, str] | None = None) -> dict[str, str
     overrides = overrides or get_model_overrides()
     active: dict[str, str] = {}
     for phase in PHASE_SEQUENCE:
-        active[phase] = overrides.get(phase, get_default_preset_key(phase))
+        override = overrides.get(phase)
+        if override is not None:
+            active[phase] = override
+            continue
+
+        default_key = get_default_preset_key(phase)
+        if default_key is not None:
+            active[phase] = default_key
     return active
 
 
@@ -107,18 +122,18 @@ def apply_user_overrides(overrides: dict[str, str] | None = None) -> dict[str, s
 
     # reset to defaults first
     for phase, preset_key in agent_settings.MODEL_PRESET_DEFAULTS.items():
-        preset = agent_settings.MODEL_PRESETS[preset_key]["config"]
-        agent_settings.MODEL_CONFIG[phase] = preset
+        default_preset: PresetDefinition = agent_settings.MODEL_PRESETS[preset_key]
+        agent_settings.MODEL_CONFIG[phase] = default_preset["config"]
         applied[phase] = preset_key
 
     # apply overrides when valid
     for phase, preset_key in overrides.items():
         if phase not in agent_settings.MODEL_PRESET_DEFAULTS:
             continue
-        preset = agent_settings.MODEL_PRESETS.get(preset_key)
-        if not preset:
+        override_preset: Optional[PresetDefinition] = agent_settings.MODEL_PRESETS.get(preset_key)
+        if override_preset is None:
             continue
-        agent_settings.MODEL_CONFIG[phase] = preset["config"]
+        agent_settings.MODEL_CONFIG[phase] = override_preset["config"]
         applied[phase] = preset_key
 
     return applied
@@ -144,4 +159,3 @@ def _provider_display_name(provider: ModelProvider) -> str:
         ModelProvider.DEEPSEEK: "DeepSeek",
     }
     return mapping.get(provider, provider.value.title())
-

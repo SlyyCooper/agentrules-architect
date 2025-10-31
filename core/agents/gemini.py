@@ -39,6 +39,38 @@ from core.agents.base import BaseArchitect, ModelProvider, ReasoningMode  # Impo
 # Get logger
 logger = logging.getLogger("project_extractor")
 
+
+def _collect_candidate_parts(response: Any) -> list[Any]:
+    """Safely collect all content parts from a Gemini response."""
+    parts: list[Any] = []
+    candidates = getattr(response, "candidates", None) or []
+    for candidate in candidates:
+        content = getattr(candidate, "content", None)
+        candidate_parts = getattr(content, "parts", None)
+        if not candidate_parts:
+            continue
+        for part in candidate_parts:
+            parts.append(part)
+    return parts
+
+
+def _extract_function_call_args(function_call: Any) -> dict[str, Any]:
+    """Normalize Gemini function-call arguments into a dictionary."""
+    if function_call is None:
+        return {}
+
+    args_obj = getattr(function_call, "args", None)
+    if isinstance(args_obj, dict):
+        return args_obj
+    if isinstance(args_obj, Struct):
+        return {key: value for key, value in args_obj.items()}
+
+    arguments_obj = getattr(function_call, "arguments", None)
+    if isinstance(arguments_obj, dict):
+        return arguments_obj
+
+    return {}
+
 # ====================================================
 # GeminiArchitect Class Definition
 # This class implements the BaseArchitect for Google's Gemini models.
@@ -220,10 +252,11 @@ class GeminiArchitect(BaseArchitect):
             )
 
             # Send a request to the Gemini API to analyze the given context.
-            if not self.client:
+            client = self.client
+            if client is None:
                 raise ValueError("Gemini client not initialized. Please provide a valid API key or set GEMINI_API_KEY.")
             response = await asyncio.to_thread(
-                self.client.models.generate_content,
+                client.models.generate_content,
                 model=model_name,
                 contents=prompt,
                 config=generation_config,
@@ -239,36 +272,32 @@ class GeminiArchitect(BaseArchitect):
             }
 
             # Extract text part
+            parts = _collect_candidate_parts(response)
+
             try:
                 results["findings"] = response.text
             except ValueError:
-                 # Handle cases where the response might not have a direct text part
-                 # (e.g., if only a function call is returned)
-                 logger.warning(f"{agent_name}: No direct text content found in response.")
-                 # Check parts for text
-                 for part in response.candidates[0].content.parts:
-                     if part.text:
-                         results["findings"] = part.text
-                         break
+                results["findings"] = None
+
+            if not results["findings"]:
+                for part in parts:
+                    part_text = getattr(part, "text", None)
+                    if part_text:
+                        results["findings"] = part_text
+                        break
+                else:
+                    logger.warning(f"{agent_name}: No direct text content found in response.")
 
             # Extract function calls
             function_calls = []
-            for part in response.candidates[0].content.parts:
-                if getattr(part, 'function_call', None):
-                    fc = part.function_call
-                    args_dict: dict[str, Any] = {}
-                    # New SDK may present args as dict; handle Struct as fallback
-                    if hasattr(fc, 'args'):
-                        if isinstance(fc.args, dict):
-                            args_dict = fc.args
-                        elif isinstance(fc.args, Struct):
-                            args_dict = {k: v for k, v in fc.args.items()}
-                    elif hasattr(fc, 'arguments') and isinstance(fc.arguments, dict):
-                        args_dict = fc.arguments
-                    function_calls.append({
-                        "name": getattr(fc, 'name', None),
-                        "args": args_dict,
-                    })
+            for part in parts:
+                fc = getattr(part, "function_call", None)
+                if fc is None:
+                    continue
+                function_calls.append({
+                    "name": getattr(fc, "name", None),
+                    "args": _extract_function_call_args(fc),
+                })
 
             if function_calls:
                  logger.info(f"[bold magenta]{agent_name}:[/bold magenta] Model requested function call(s).")
@@ -306,7 +335,7 @@ class GeminiArchitect(BaseArchitect):
         Returns:
             Dictionary containing the analysis plan
         """
-        context = {"phase1_results": phase1_results}
+        context: dict[str, Any] = {"phase1_results": phase1_results}
         if prompt:
             context["formatted_prompt"] = prompt
         # Call analyze without tools
@@ -335,7 +364,7 @@ class GeminiArchitect(BaseArchitect):
         Returns:
             Dictionary containing the synthesis
         """
-        context = {"phase3_results": phase3_results}
+        context: dict[str, Any] = {"phase3_results": phase3_results}
         if prompt:
             context["formatted_prompt"] = prompt
         # Call analyze without tools
@@ -364,7 +393,7 @@ class GeminiArchitect(BaseArchitect):
         Returns:
             Dictionary containing the final analysis
         """
-        context = {"consolidated_report": consolidated_report}
+        context: dict[str, Any] = {"consolidated_report": consolidated_report}
         if prompt:
             context["formatted_prompt"] = prompt
         # Call analyze without tools
@@ -409,8 +438,11 @@ class GeminiArchitect(BaseArchitect):
                     model_name = "gemini-2.5-pro-exp-03-25"
 
             # Use the same models.generate_content path as in analyze()
+            client = self.client
+            if client is None:
+                raise ValueError("Gemini client not initialized. Please provide a valid API key or set GEMINI_API_KEY.")
             response = await asyncio.to_thread(
-                self.client.models.generate_content,
+                client.models.generate_content,
                 model=model_name,
                 contents=content,
             )
@@ -445,8 +477,8 @@ class GeminiAgent:
         name: str,
         role: str,
         responsibilities: list[str],
-        prompt_template: str | None = None,
-        api_key: str | None = None,
+        prompt_template: Optional[str] = None,
+        api_key: Optional[str] = None,
     ):
         """
         Initialize a Gemini agent with a specific name, role, and responsibilities.

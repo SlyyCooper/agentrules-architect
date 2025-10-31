@@ -7,7 +7,8 @@ produces deterministic outputs and, for the Researcher, emits a Tavily
 tool call to exercise the tool execution path.
 """
 
-from typing import Any, Optional
+from types import ModuleType
+from typing import Any, Optional, cast
 
 from core.agents.base import BaseArchitect, ModelProvider, ReasoningMode
 
@@ -136,17 +137,18 @@ def patch_factory_offline() -> None:
         return _make_dummy(name or "Researcher Agent", role or "research", responsibilities)
 
     # Patch both the module-level factory functions and the package-level re-exports
-    fact.get_architect_for_phase = get_architect_for_phase_stub  # type: ignore
-    fact.get_researcher_architect = get_researcher_architect_stub  # type: ignore
+    fact_module: ModuleType = cast(ModuleType, fact)
+    setattr(fact_module, "get_architect_for_phase", get_architect_for_phase_stub)
+    setattr(fact_module, "get_researcher_architect", get_researcher_architect_stub)
     # Re-exported by core.agents and core.agents.factory package __init__
     try:
-        agents_pkg.get_architect_for_phase = get_architect_for_phase_stub  # type: ignore
+        setattr(agents_pkg, "get_architect_for_phase", get_architect_for_phase_stub)
     except Exception:
         pass
     try:
         # Package-level attribute
         from core.agents import factory as factory_pkg  # type: ignore
-        factory_pkg.get_architect_for_phase = get_architect_for_phase_stub  # type: ignore
+        setattr(factory_pkg, "get_architect_for_phase", get_architect_for_phase_stub)
     except Exception:
         pass
 
@@ -165,6 +167,6 @@ def patch_factory_offline() -> None:
         if not module:
             continue
         if hasattr(module, "get_architect_for_phase"):
-            module.get_architect_for_phase = get_architect_for_phase_stub
+            setattr(module, "get_architect_for_phase", get_architect_for_phase_stub)
         if module_name == "core.analysis.phase_1" and hasattr(module, "get_researcher_architect"):
-            module.get_researcher_architect = get_researcher_architect_stub
+            setattr(module, "get_researcher_architect", get_researcher_architect_stub)

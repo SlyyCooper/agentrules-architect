@@ -1,11 +1,10 @@
 """
 core/agent_tools/tool_manager.py
 
-This module provides a centralized manager for tool definitions and conversions
-between different model providers.
+Central manager for tool definitions and provider-specific conversions.
 """
 
-from typing import Any
+from typing import Any, Optional, Sequence
 
 from core.agents.base import ModelProvider
 from core.types.tool_config import Tool
@@ -18,7 +17,7 @@ class ToolManager:
 
     @staticmethod
     def get_provider_tools(
-        tools: list[Tool],
+        tools: Optional[Sequence[Tool]],
         provider: ModelProvider
     ) -> list[Any]:
         """
@@ -34,9 +33,11 @@ class ToolManager:
         if not tools:
             return []
 
+        normalized = list(tools)
+
         if provider == ModelProvider.OPENAI:
             # OpenAI's format is very similar to our standard format
-            return tools
+            return list(normalized)
 
         elif provider == ModelProvider.ANTHROPIC:
             # Convert to Anthropic's tools format
@@ -50,7 +51,7 @@ class ToolManager:
                         "required": tool["function"]["parameters"].get("required", [])
                     }
                 }
-                for tool in tools
+                for tool in normalized
             ]
 
         elif provider == ModelProvider.GEMINI:
@@ -58,7 +59,7 @@ class ToolManager:
             # The new SDK accepts pydantic types or plain dicts via config parsing.
             # We return list of dict tools using function_declarations with JSON schema parameters.
             converted = []
-            for tool in tools:
+            for tool in normalized:
                 fn = tool.get("function", {})
                 converted.append({
                     "function_declarations": [
@@ -91,4 +92,5 @@ class ToolManager:
             List of tools for the specified phase
         """
         phase_key = f"{phase.upper()}_TOOLS"
-        return tools_config.get(phase_key, [])
+        tools = tools_config.get(phase_key, [])
+        return list(tools) if tools else []

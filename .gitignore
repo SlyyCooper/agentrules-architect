@@ -30,3 +30,5 @@ wheels/
 project_tree_*
 our-notes/
 .venv_agentrules/
+docs/
+.claude/

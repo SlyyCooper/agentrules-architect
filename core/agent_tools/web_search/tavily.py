@@ -11,14 +11,17 @@ It includes the tool's schema definition and the function to execute the search.
 
 import json
 import os
+from typing import Any, Literal, cast
 
 from tavily import AsyncTavilyClient
+
+from core.types.tool_config import Tool
 
 # ====================================================
 # Tool Definition
 # ====================================================
 
-TAVILY_SEARCH_TOOL_SCHEMA = {
+TAVILY_SEARCH_TOOL_SCHEMA: Tool = cast(Tool, {
     "type": "function",
     "function": {
         "name": "tavily_web_search",
@@ -51,7 +54,21 @@ TAVILY_SEARCH_TOOL_SCHEMA = {
             "required": ["query"]
         }
     }
-}
+})
+
+# Literal type for Tavily depth argument
+TavilySearchDepth = Literal["basic", "advanced"]
+
+
+def _normalize_search_depth(raw_depth: Any) -> TavilySearchDepth:
+    """
+    Coerce arbitrary input into a valid Tavily search depth literal.
+    Defaults to \"basic\" unless the caller explicitly requests \"advanced\".
+    """
+    if isinstance(raw_depth, str) and raw_depth.lower() == "advanced":
+        return "advanced"
+    return "basic"
+
 
 # ====================================================
 # Tool Implementation
@@ -78,13 +95,14 @@ async def run_tavily_search(
         return json.dumps({"error": "Tavily API key not found in environment variables."})
 
     try:
-        # Ensure max_results is within the valid range
+        # Ensure max_results and search depth are within the valid ranges
         clamped_max_results = max(1, min(max_results, 10))
+        depth = _normalize_search_depth(search_depth)
 
         client = AsyncTavilyClient(api_key=api_key)
         response = await client.search(
             query=query,
-            search_depth=search_depth,
+            search_depth=depth,
             max_results=clamped_max_results
         )
         return json.dumps(response, indent=2)

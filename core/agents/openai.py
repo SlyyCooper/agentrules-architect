@@ -64,7 +64,7 @@ class OpenAIArchitect(BaseArchitect):
     def __init__(
         self,
         model_name: str = "o3",
-        reasoning: ReasoningMode = None,
+        reasoning: Optional[ReasoningMode] = None,
         temperature: Optional[float] = None,
         name: Optional[str] = None,
         role: Optional[str] = None,
@@ -85,23 +85,30 @@ class OpenAIArchitect(BaseArchitect):
             prompt_template: Optional custom prompt template to use
             tools_config: Optional configuration for tools the model can use
         """
+        effective_reasoning: ReasoningMode
         # Set default reasoning based on model
         if reasoning is None:
             if model_name in ["o3", "o4-mini"]:
-                reasoning = ReasoningMode.HIGH
+                effective_reasoning = ReasoningMode.HIGH
             elif model_name == "gpt-4.1":
-                reasoning = ReasoningMode.TEMPERATURE
+                effective_reasoning = ReasoningMode.TEMPERATURE
             else:
-                reasoning = ReasoningMode.DISABLED
+                effective_reasoning = ReasoningMode.DISABLED
+        else:
+            effective_reasoning = reasoning
 
         # Set default temperature for gpt-4.1 if not specified
-        if model_name == "gpt-4.1" and temperature is None and reasoning == ReasoningMode.TEMPERATURE:
+        if (
+            model_name == "gpt-4.1"
+            and temperature is None
+            and effective_reasoning == ReasoningMode.TEMPERATURE
+        ):
             temperature = 0.7  # Default temperature for gpt-4.1
 
         super().__init__(
             provider=ModelProvider.OPENAI,
             model_name=model_name,
-            reasoning=reasoning,
+            reasoning=effective_reasoning,
             temperature=temperature,
             name=name,
             role=role,

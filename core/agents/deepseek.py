@@ -230,7 +230,7 @@ Provide your analysis in a structured format with clear sections and actionable 
     # Phase-specific methods
     async def create_analysis_plan(self, phase1_results: dict, prompt: Optional[str] = None) -> dict:
         """Create an analysis plan based on Phase 1 results."""
-        context = {"phase1_results": phase1_results}
+        context: dict[str, Any] = {"phase1_results": phase1_results}
         if prompt:
             context["formatted_prompt"] = prompt
         result = await self.analyze(context)
@@ -244,7 +244,7 @@ Provide your analysis in a structured format with clear sections and actionable 
 
     async def synthesize_findings(self, phase3_results: dict, prompt: Optional[str] = None) -> dict:
         """Synthesize findings from Phase 3."""
-        context = {"phase3_results": phase3_results}
+        context: dict[str, Any] = {"phase3_results": phase3_results}
         if prompt:
             context["formatted_prompt"] = prompt
         result = await self.analyze(context)
@@ -258,7 +258,7 @@ Provide your analysis in a structured format with clear sections and actionable 
 
     async def final_analysis(self, consolidated_report: dict, prompt: Optional[str] = None) -> dict:
         """Provide final analysis on the consolidated report."""
-        context = {"consolidated_report": consolidated_report}
+        context: dict[str, Any] = {"consolidated_report": consolidated_report}
         if prompt:
             context["formatted_prompt"] = prompt
         result = await self.analyze(context)
@@ -272,7 +272,9 @@ Provide your analysis in a structured format with clear sections and actionable 
 
     async def consolidate_results(self, all_results: dict, prompt: Optional[str] = None) -> dict:
         """Consolidate all phase results."""
-        context = {"all_results": all_results, "formatted_prompt": prompt} if prompt else {"all_results": all_results}
+        context: dict[str, Any] = {"all_results": all_results}
+        if prompt is not None:
+            context["formatted_prompt"] = prompt
         result = await self.analyze(context)
 
         return {

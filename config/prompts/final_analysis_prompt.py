@@ -7,6 +7,7 @@ These prompts are used by the OpenAI agent to generate the final analysis of the
 
 import json
 from datetime import datetime
+from typing import Optional, Sequence
 
 # Prompt for the Final Analysis (OpenAI)
 FINAL_ANALYSIS_PROMPT = """
@@ -388,7 +389,10 @@ The CRS-1 specification provides a structured framework for creating effective c
 
 """
 
-def format_final_analysis_prompt(consolidated_report: dict, project_structure: list[str] = None) -> str:
+def format_final_analysis_prompt(
+    consolidated_report: dict,
+    project_structure: Optional[Sequence[str]] = None,
+) -> str:
     """
     Format the Final Analysis prompt with the consolidated report and project structure.
 
@@ -400,10 +404,13 @@ def format_final_analysis_prompt(consolidated_report: dict, project_structure: l
         Formatted prompt string
     """
     # Format the project structure
-    if project_structure is None:
-        project_structure = ["No project structure provided"]
+    structure_lines = (
+        list(project_structure)
+        if project_structure is not None
+        else ["No project structure provided"]
+    )
 
-    structure_str = "\n".join(project_structure)
+    structure_str = "\n".join(structure_lines)
 
     # Get current month and year
     current_month = datetime.now().strftime("%B")

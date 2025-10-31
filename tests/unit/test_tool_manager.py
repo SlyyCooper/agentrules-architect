@@ -1,10 +1,11 @@
 
 from core.agent_tools.tool_manager import ToolManager
 from core.agents.base import ModelProvider
+from core.types.tool_config import Tool
 
 
-def _sample_tool():
-    return {
+def _sample_tool() -> Tool:
+    tool: Tool = {
         "type": "function",
         "function": {
             "name": "tavily_web_search",
@@ -19,6 +20,7 @@ def _sample_tool():
             },
         },
     }
+    return tool
 
 
 def test_get_provider_tools_no_tools_returns_empty():
@@ -64,4 +66,3 @@ def test_get_provider_tools_deepseek_returns_empty():
     converted = ToolManager.get_provider_tools(tools, ModelProvider.DEEPSEEK)
     # DeepSeek path returns empty (no tool support in manager)
     assert converted == []
-

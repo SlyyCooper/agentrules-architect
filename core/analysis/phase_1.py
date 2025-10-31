@@ -12,7 +12,7 @@ It defines the agents and methods needed for the initial exploration of the proj
 
 import asyncio  # For running asynchronous tasks concurrently.
 import json  # For handling JSON data.
-from typing import Any  # For type hinting.
+from typing import Any, Optional, Sequence  # For type hinting.
 
 from config.prompts.phase_1_prompts import (  # Prompts used for configuring the agents in Phase 1.
     DEPENDENCY_AGENT_PROMPT,
@@ -22,6 +22,7 @@ from config.prompts.phase_1_prompts import (  # Prompts used for configuring the
     TECH_STACK_AGENT_PROMPT,
 )
 from config.tools import TOOL_SETS
+from core.types.tool_config import Tool
 from core.agents.factory.factory import get_architect_for_phase, get_researcher_architect
 
 try:
@@ -148,7 +149,7 @@ class Phase1Analysis:
     async def _run_researcher_with_tools(
         self,
         research_context: dict[str, Any],
-        researcher_tools: list[Any]
+        researcher_tools: Optional[Sequence[Tool]]
     ) -> dict[str, Any]:
         """Execute the researcher architect, completing tool loops when required."""
 
@@ -158,9 +159,13 @@ class Phase1Analysis:
         latest_response: dict[str, Any] = {}
 
         context_payload: dict[str, Any] = dict(base_context)
+        tools_for_agent: list[Tool] = list(researcher_tools) if researcher_tools else []
 
         for iteration in range(1, MAX_RESEARCHER_TOOL_ITERATIONS + 1):
-            latest_response = await self.researcher_architect.analyze(context_payload, tools=researcher_tools)
+            latest_response = await self.researcher_architect.analyze(
+                context_payload,
+                tools=tools_for_agent,
+            )
 
             # Collect and execute tool requests, if any
             latest_tool_runs: list[dict[str, Any]] = []

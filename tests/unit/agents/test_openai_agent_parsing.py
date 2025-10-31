@@ -1,4 +1,5 @@
 import unittest
+from typing import Any, cast
 
 from core.agents.openai import OpenAIArchitect
 from tests.fakes.vendor_responses import OpenAIChatCompletionFake, _ToolCallFake
@@ -36,7 +37,9 @@ class OpenAIArchitectParsingTests(unittest.IsolatedAsyncioTestCase):
         arch = OpenAIArchitect(model_name="o3")
         await arch.analyze({"foo": "bar"})
         p = self.fake_client.completions_api.last_params
-        self.assertIsNotNone(p)
+        if p is None:
+            self.fail("Expected parameters to be captured on the fake completions API")
+        p = cast(dict[str, Any], p)
         # For o3 default reasoning HIGH -> reasoning_effort included
         self.assertEqual(p.get("model"), "o3")
         self.assertEqual(p.get("reasoning_effort"), "high")

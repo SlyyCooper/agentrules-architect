@@ -1,4 +1,5 @@
 import types
+from typing import Any, cast
 
 from core.agents.deepseek import DeepSeekArchitect
 
@@ -24,15 +25,11 @@ class _FakeResponse:
 
 class _FakeDeepseekClient:
     def __init__(self):
-        class Chat:
-            class Comps:
-                def create(self, **kwargs):  # accepts params
-                    return _FakeResponse(_FakeMessage(content="hi"))
+        def create(**kwargs):
+            return _FakeResponse(_FakeMessage(content="hi"))
 
-            def __init__(self):
-                self.completions = _FakeDeepseekClient.Chat.Comps()
-
-        self.chat = Chat()
+        completions = types.SimpleNamespace(create=create)
+        self.chat = types.SimpleNamespace(completions=completions)
 
 
 import pytest
@@ -41,7 +38,7 @@ import pytest
 @pytest.mark.asyncio
 async def test_deepseek_chat_returns_findings(monkeypatch):
     arch = DeepSeekArchitect(model_name="deepseek-chat")
-    arch.client = _FakeDeepseekClient()
+    arch.client = cast(Any, _FakeDeepseekClient())
     res = await arch.analyze({"formatted_prompt": "x"})
     assert res["findings"] == "hi"
     assert res["tool_calls"] is None
@@ -53,18 +50,14 @@ async def test_deepseek_reasoner_includes_reasoning(monkeypatch):
 
     class Client(_FakeDeepseekClient):
         def __init__(self):
-            class Chat:
-                class Comps:
-                    def create(self, **kwargs):
-                        msg = _FakeMessage(content=None, reasoning_content="think", tool_calls=[])
-                        return _FakeResponse(msg)
+            def create(**kwargs):
+                msg = _FakeMessage(content=None, reasoning_content="think", tool_calls=[])
+                return _FakeResponse(msg)
 
-                def __init__(self):
-                    self.completions = Chat.Comps()
+            completions = types.SimpleNamespace(create=create)
+            self.chat = types.SimpleNamespace(completions=completions)
 
-            self.chat = Chat()
-
-    arch.client = Client()
+    arch.client = cast(Any, Client())
     res = await arch.analyze({"formatted_prompt": "x"})
     assert res["reasoning"] == "think"
     assert res["findings"] is None or res["findings"] is None or res["findings"] == ""
@@ -76,21 +69,17 @@ async def test_deepseek_tool_calls_clear_findings(monkeypatch):
 
     class Client(_FakeDeepseekClient):
         def __init__(self):
-            class Chat:
-                class Comps:
-                    def create(self, **kwargs):
-                        msg = _FakeMessage(
-                            content=None,
-                            tool_calls=[_FakeToolCall("id1", "t", "{}")],
-                        )
-                        return _FakeResponse(msg)
+            def create(**kwargs):
+                msg = _FakeMessage(
+                    content=None,
+                    tool_calls=[_FakeToolCall("id1", "t", "{}")],
+                )
+                return _FakeResponse(msg)
 
-                def __init__(self):
-                    self.completions = Chat.Comps()
+            completions = types.SimpleNamespace(create=create)
+            self.chat = types.SimpleNamespace(completions=completions)
 
-            self.chat = Chat()
-
-    arch.client = Client()
+    arch.client = cast(Any, Client())
     res = await arch.analyze({"formatted_prompt": "x"})
     assert isinstance(res["tool_calls"], list) and res["tool_calls"][0]["function"]["name"] == "t"
     assert res["findings"] is None

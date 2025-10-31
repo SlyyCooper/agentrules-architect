@@ -65,6 +65,7 @@ async def test_live_final_analysis_configs(name: str, model_config: ModelConfig,
     import config.agents as cfg
 
     original = cfg.MODEL_CONFIG.get("final")
+    assert original is not None, "Expected 'final' preset to be preconfigured"
     cfg.MODEL_CONFIG["final"] = model_config
     try:
         fa = FinalAnalysis()

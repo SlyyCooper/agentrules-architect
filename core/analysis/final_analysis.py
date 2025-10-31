@@ -11,6 +11,7 @@ It defines the methods needed for performing the final analysis on the consolida
 # ====================================================
 
 import logging  # Used for logging events and errors.
+from typing import Optional, Sequence
 
 from config.prompts.final_analysis_prompt import (
     format_final_analysis_prompt,  # Function to format the final analysis prompt.
@@ -55,7 +56,11 @@ class FinalAnalysis:
     # This method executes the final analysis phase.
     # ====================================================
 
-    async def run(self, consolidated_report: dict, project_structure: list[str] = None) -> dict:
+    async def run(
+        self,
+        consolidated_report: dict,
+        project_structure: Optional[Sequence[str]] = None,
+    ) -> dict:
         """
         Run the Final Analysis Phase using the configured model.
 
