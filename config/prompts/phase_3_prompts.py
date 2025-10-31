@@ -5,43 +5,43 @@ This module provides prompt templates for Phase 3 (Deep Analysis) of the project
 It defines functions to format prompts for the dynamic agents based on their assignments.
 """
 
-from typing import Dict
 
-def format_phase3_prompt(context: Dict) -> str:
+
+def format_phase3_prompt(context: dict) -> str:
     """
     Format the prompt for a Phase 3 analysis agent.
-    
+
     Args:
         context: Dictionary containing agent information and analysis context
-        
+
     Returns:
         Formatted prompt string
     """
     # Extract required context elements with defaults
     agent_name = context.get("agent_name", "Analysis Agent")
     agent_role = context.get("agent_role", "analyzing code files")
-    
+
     # Format the tree structure
     tree_structure = context.get("tree_structure", [])
     if isinstance(tree_structure, list):
         tree_structure = "\n".join(tree_structure)
-    
+
     # Format assigned files
     assigned_files = context.get("assigned_files", [])
     if isinstance(assigned_files, list):
         assigned_files = "\n".join(f"- {file}" for file in assigned_files)
-    
+
     # Format file contents
     file_contents = context.get("file_contents", {})
     if isinstance(file_contents, dict):
         formatted_contents = []
         for path, content in file_contents.items():
             formatted_contents.append(f"<file path=\"{path}\">\n{content}\n</file>")
-        
+
         file_content_str = "\n\n".join(formatted_contents)
     else:
         file_content_str = str(file_contents)
-    
+
     # Return a formatted prompt
     return f"""You are {agent_name}, responsible for {agent_role}.
 
@@ -63,4 +63,4 @@ Analyze the code following these guidelines:
 4. Pay attention to relationships between different components
 5. Summarize your findings in a clear, structured format
 
-Format your response as a structured report with clear sections and findings for each file.""" 
+Format your response as a structured report with clear sections and findings for each file."""

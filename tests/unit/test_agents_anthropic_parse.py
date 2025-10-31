@@ -1,8 +1,8 @@
-import types
 
 import pytest
-from core.agents.anthropic import AnthropicArchitect
+
 import core.agents.anthropic as anthropic_mod
+from core.agents.anthropic import AnthropicArchitect
 
 
 class _BlockText:

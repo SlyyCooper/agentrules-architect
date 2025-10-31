@@ -11,8 +11,11 @@ It defines the methods needed for performing the final analysis on the consolida
 # ====================================================
 
 import logging  # Used for logging events and errors.
-from typing import Dict, List  # Used for type hinting.
-from config.prompts.final_analysis_prompt import format_final_analysis_prompt  # Function to format the final analysis prompt.
+
+from config.prompts.final_analysis_prompt import (
+    format_final_analysis_prompt,  # Function to format the final analysis prompt.
+)
+
 # Architect factory is resolved at call time to honor test monkeypatching
 
 # ====================================================
@@ -32,43 +35,43 @@ logger = logging.getLogger("project_extractor")
 class FinalAnalysis:
     """
     Class responsible for the Final Analysis phase of the project analysis.
-    
+
     This phase uses a model configured in config/agents.py to perform a final analysis on the
     consolidated report from Phase 5, providing architectural patterns,
     system structure mapping, and improvement recommendations.
     """
-    
+
     # ====================================================
     # Initialization (__init__)
     # This method sets up the initial state of the FinalAnalysis class.
     # ====================================================
-    
+
     def __init__(self):
         """Initialize Final Analysis. Architect resolved lazily in run()."""
         self.architect = None
-    
+
     # ====================================================
     # Run Method
     # This method executes the final analysis phase.
     # ====================================================
-    
-    async def run(self, consolidated_report: Dict, project_structure: List[str] = None) -> Dict:
+
+    async def run(self, consolidated_report: dict, project_structure: list[str] = None) -> dict:
         """
         Run the Final Analysis Phase using the configured model.
-        
+
         Args:
             consolidated_report: Dictionary containing the consolidated report from Phase 5.
             project_structure: List of strings representing the project directory tree.
-            
+
         Returns:
             Dictionary containing the final analysis and token usage.
         """
         try:
             # Format the prompt using the template from the prompts file.
             prompt = format_final_analysis_prompt(consolidated_report, project_structure)
-            
+
             logger.info("[bold]Final Analysis:[/bold] Creating Cursor rules from consolidated report")
-            
+
             # Resolve architect at call time to allow test monkeypatches
             if self.architect is None:
                 from core.agents.factory import factory as _factory
@@ -76,9 +79,9 @@ class FinalAnalysis:
 
             # Use the architect to perform the final analysis with the formatted prompt.
             result = await self.architect.final_analysis(consolidated_report, prompt)
-            
+
             logger.info("[bold green]Final Analysis:[/bold green] Rules creation completed successfully")
-            
+
             return result
         except Exception as e:
             # Log any errors that occur during the analysis.

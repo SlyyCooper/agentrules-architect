@@ -10,16 +10,13 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from config.agents import MODEL_CONFIG
-from config.exclusions import EXCLUDED_DIRS, EXCLUDED_EXTENSIONS, EXCLUDED_FILES
 from core.analysis import (
     FinalAnalysis,
     Phase1Analysis,
@@ -30,9 +27,9 @@ from core.analysis import (
 )
 from core.utils.file_creation.cursorignore import create_cursorignore
 from core.utils.file_creation.phases_output import save_phase_outputs
+from core.utils.file_system.tree_generator import get_project_tree
 from core.utils.formatters.clean_cursorrules import clean_cursorrules
 from core.utils.model_config_helper import get_model_config_name
-from core.utils.file_system.tree_generator import get_project_tree
 
 logger = logging.getLogger("project_extractor")
 
@@ -40,16 +37,16 @@ logger = logging.getLogger("project_extractor")
 class ProjectAnalyzer:
     """High-level coordinator for the six-phase analysis pipeline."""
 
-    def __init__(self, directory: Path, console: Optional[Console] = None):
+    def __init__(self, directory: Path, console: Console | None = None):
         self.directory = directory
         self.console = console or Console()
 
-        self.phase1_results: Dict = {}
-        self.phase2_results: Dict = {}
-        self.phase3_results: Dict = {}
-        self.phase4_results: Dict = {}
-        self.consolidated_report: Dict = {}
-        self.final_analysis: Dict = {}
+        self.phase1_results: dict = {}
+        self.phase2_results: dict = {}
+        self.phase3_results: dict = {}
+        self.phase4_results: dict = {}
+        self.consolidated_report: dict = {}
+        self.final_analysis: dict = {}
 
         self.phase1_analyzer = Phase1Analysis()
         self.phase2_analyzer = Phase2Analysis()
@@ -58,22 +55,22 @@ class ProjectAnalyzer:
         self.phase5_analyzer = Phase5Analysis()
         self.final_analyzer = FinalAnalysis()
 
-    async def run_phase1(self, tree: List[str], package_info: Dict) -> Dict:
+    async def run_phase1(self, tree: list[str], package_info: dict) -> dict:
         return await self.phase1_analyzer.run(tree, package_info)
 
-    async def run_phase2(self, phase1_results: Dict, tree: List[str]) -> Dict:
+    async def run_phase2(self, phase1_results: dict, tree: list[str]) -> dict:
         return await self.phase2_analyzer.run(phase1_results, tree)
 
-    async def run_phase3(self, analysis_plan: Dict, tree: List[str]) -> Dict:
+    async def run_phase3(self, analysis_plan: dict, tree: list[str]) -> dict:
         return await self.phase3_analyzer.run(analysis_plan, tree, self.directory)
 
-    async def run_phase4(self, phase3_results: Dict) -> Dict:
+    async def run_phase4(self, phase3_results: dict) -> dict:
         return await self.phase4_analyzer.run(phase3_results)
 
-    async def run_phase5(self, all_results: Dict) -> Dict:
+    async def run_phase5(self, all_results: dict) -> dict:
         return await self.phase5_analyzer.run(all_results)
 
-    async def run_final_analysis(self, consolidated_report: Dict, tree: List[str] | None = None) -> Dict:
+    async def run_final_analysis(self, consolidated_report: dict, tree: list[str] | None = None) -> dict:
         return await self.final_analyzer.run(consolidated_report, tree)
 
     async def analyze(self) -> str:
@@ -93,7 +90,7 @@ class ProjectAnalyzer:
             tree_with_delimiters = get_project_tree(self.directory)
             tree_for_analysis = _strip_tree_delimiters(tree_with_delimiters)
 
-            package_info: Dict = {}
+            package_info: dict = {}
             self.phase1_results = await self.run_phase1(tree_for_analysis, package_info)
 
             progress.update(task1, completed=1)
@@ -116,7 +113,10 @@ class ProjectAnalyzer:
 
             agent_count = len(self.phase2_results.get("agents", []))
             if agent_count > 0:
-                self.console.print(f"[dim]Running {agent_count} specialized analysis agents on their assigned files...[/dim]")
+                self.console.print(
+                    f"[dim]Running {agent_count} specialized analysis agents on their "
+                    "assigned files...[/dim]"
+                )
             else:
                 self.console.print("[dim]Running specialized analysis on project files...[/dim]")
 
@@ -167,7 +167,7 @@ class ProjectAnalyzer:
             progress.remove_task(task6)
             self.console.print("[white]✓[/white] Final Analysis complete: Cursor rules created")
 
-        analysis_lines: List[str] = [
+        analysis_lines: list[str] = [
             f"Project Analysis Report for: {self.directory}",
             "=" * 50 + "\n",
             "## Project Structure\n",
@@ -241,13 +241,21 @@ class ProjectAnalyzer:
         else:
             self.console.print(f"[yellow]{message}[/]")
 
-        self.console.print(f"[green]Individual phase outputs saved to:[/] {self.directory}/phases_output/")
-        self.console.print(f"[green]Cursor rules created at:[/] {self.directory}/.cursorrules")
-        self.console.print(f"[green]Cursor ignore created at:[/] {self.directory}/.cursorignore")
-        self.console.print(f"[green]Execution metrics saved to:[/] {self.directory}/phases_output/metrics.md")
+        self.console.print(
+            f"[green]Individual phase outputs saved to:[/] {self.directory}/phases_output/"
+        )
+        self.console.print(
+            f"[green]Cursor rules created at:[/] {self.directory}/.cursorrules"
+        )
+        self.console.print(
+            f"[green]Cursor ignore created at:[/] {self.directory}/.cursorignore"
+        )
+        self.console.print(
+            f"[green]Execution metrics saved to:[/] {self.directory}/phases_output/metrics.md"
+        )
 
 
-def run_analysis(directory: Path, console: Optional[Console] = None) -> str:
+def run_analysis(directory: Path, console: Console | None = None) -> str:
     analyzer = ProjectAnalyzer(directory, console)
     loop = asyncio.new_event_loop()
     try:
@@ -257,8 +265,12 @@ def run_analysis(directory: Path, console: Optional[Console] = None) -> str:
         loop.close()
 
 
-def _strip_tree_delimiters(tree_with_delimiters: List[str]) -> List[str]:
-    if len(tree_with_delimiters) >= 2 and tree_with_delimiters[0] == "<project_structure>" and tree_with_delimiters[-1] == "</project_structure>":
+def _strip_tree_delimiters(tree_with_delimiters: list[str]) -> list[str]:
+    has_wrapping_tags = (
+        len(tree_with_delimiters) >= 2
+        and tree_with_delimiters[0] == "<project_structure>"
+        and tree_with_delimiters[-1] == "</project_structure>"
+    )
+    if has_wrapping_tags:
         return tree_with_delimiters[1:-1]
     return tree_with_delimiters
-

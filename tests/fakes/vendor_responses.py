@@ -4,8 +4,7 @@ Lightweight fake response objects that mimic vendor SDK shapes used in the code.
 These keep tests fully offline and stable without incurring API charges.
 """
 
-from typing import Any, List, Optional
-
+from typing import Any, Optional
 
 # -------------------------------
 # OpenAI / DeepSeek (OpenAI-style)
@@ -25,7 +24,7 @@ class _ToolCallFake:
 
 
 class _MessageFake:
-    def __init__(self, content: Optional[str], tool_calls: Optional[List[_ToolCallFake]] = None, reasoning_content: Optional[str] = None) -> None:
+    def __init__(self, content: Optional[str], tool_calls: Optional[list[_ToolCallFake]] = None, reasoning_content: Optional[str] = None) -> None:
         self.content = content
         self.tool_calls = tool_calls or []
         # DeepSeek reasoner extension
@@ -39,12 +38,12 @@ class _ChoiceFake:
 
 
 class OpenAIChatCompletionFake:
-    def __init__(self, content: Optional[str] = "Hello", tool_calls: Optional[List[_ToolCallFake]] = None) -> None:
+    def __init__(self, content: Optional[str] = "Hello", tool_calls: Optional[list[_ToolCallFake]] = None) -> None:
         self.choices = [_ChoiceFake(_MessageFake(content=content, tool_calls=tool_calls))]
 
 
 class DeepSeekChatCompletionFake:
-    def __init__(self, content: Optional[str] = "Hi from DeepSeek", tool_calls: Optional[List[_ToolCallFake]] = None, reasoning: Optional[str] = None) -> None:
+    def __init__(self, content: Optional[str] = "Hi from DeepSeek", tool_calls: Optional[list[_ToolCallFake]] = None, reasoning: Optional[str] = None) -> None:
         self.choices = [_ChoiceFake(_MessageFake(content=content, tool_calls=tool_calls, reasoning_content=reasoning))]
 
 
@@ -72,7 +71,7 @@ class _AnthropicToolUseBlock:
 
 class AnthropicMessageCreateResponseFake:
     def __init__(self, text: Optional[str] = None, tool_call: Optional[_AnthropicToolUseBlock] = None) -> None:
-        blocks: List[Any] = []
+        blocks: list[Any] = []
         if text is not None:
             blocks.append(_AnthropicTextBlock(text))
         if tool_call is not None:
@@ -97,12 +96,12 @@ class _PartFake:
 
 
 class _ContentFake:
-    def __init__(self, parts: List[_PartFake]) -> None:
+    def __init__(self, parts: list[_PartFake]) -> None:
         self.parts = parts
 
 
 class _CandidateFake:
-    def __init__(self, parts: List[_PartFake]) -> None:
+    def __init__(self, parts: list[_PartFake]) -> None:
         self.content = _ContentFake(parts)
 
 

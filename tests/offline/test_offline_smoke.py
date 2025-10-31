@@ -1,8 +1,7 @@
-import asyncio
 import unittest
 
-from tests.utils.offline_stubs import patch_factory_offline
 from core.agents.factory import factory
+from tests.utils.offline_stubs import patch_factory_offline
 
 
 class OfflineSmokeTests(unittest.IsolatedAsyncioTestCase):

@@ -7,19 +7,19 @@ configured providers. They are skipped by default; enable with --run-live.
 
 import os
 from datetime import datetime
-from typing import Dict
 
 import pytest
 
 from core.analysis.final_analysis import FinalAnalysis
 from core.types.models import (
     CLAUDE_WITH_REASONING,
-    GPT4_1_DEFAULT as GPT4_1,
     O1_HIGH,
     O3_MINI_HIGH,
     ModelConfig,
 )
-
+from core.types.models import (
+    GPT4_1_DEFAULT as GPT4_1,
+)
 
 # Sample consolidated report for testing
 SAMPLE_CONSOLIDATED_REPORT = {

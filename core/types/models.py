@@ -5,7 +5,8 @@ This module defines the model configuration types and predefined model configura
 used throughout the CursorRules Architect system.
 """
 
-from typing import Dict, Any, NamedTuple, Optional, List
+from typing import NamedTuple, Optional
+
 from core.agents.base import ModelProvider, ReasoningMode
 from core.types.tool_config import ToolConfig
 
@@ -163,7 +164,7 @@ GEMINI_PRO = ModelConfig(
     model_name="gemini-2.5-pro",
     reasoning=ReasoningMode.ENABLED,
     tools_config={"enabled": False, "tools": None}
-) 
+)
 
 # -----------------------------------------------------------------------------
 # Backward-compatibility aliases for older test suites and integrations

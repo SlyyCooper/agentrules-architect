@@ -7,7 +7,7 @@ and configures which tools are available in each phase.
 """
 
 from core.agent_tools.web_search import TAVILY_SEARCH_TOOL_SCHEMA
-from core.types.tool_config import Tool, ToolSets
+from core.types.tool_config import ToolSets
 
 # ====================================================
 # Phase-specific Tool Sets
@@ -32,10 +32,10 @@ TOOL_SETS: ToolSets = {
 def with_tools_enabled(model_config):
     """
     Create a copy of a model config with tools enabled.
-    
+
     Args:
         model_config: The original model configuration
-        
+
     Returns:
         A new ModelConfig with tools enabled
     """

@@ -9,10 +9,10 @@ It includes the tool's schema definition and the function to execute the search.
 # Importing Required Libraries
 # ====================================================
 
-import os
 import json
+import os
+
 from tavily import AsyncTavilyClient
-from typing import Dict, Any, List, Optional
 
 # ====================================================
 # Tool Definition
@@ -36,7 +36,10 @@ TAVILY_SEARCH_TOOL_SCHEMA = {
                 "search_depth": {
                     "type": "string",
                     "enum": ["basic", "advanced"],
-                    "description": "'basic' for a quick search, 'advanced' for a more in-depth search that provides richer content.",
+                    "description": (
+                        "'basic' for a quick search, 'advanced' for a more in-depth "
+                        "search that provides richer content."
+                    ),
                     "default": "basic"
                 },
                 "max_results": {

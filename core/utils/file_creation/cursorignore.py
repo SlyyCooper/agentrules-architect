@@ -16,11 +16,10 @@ ignored by Cursor AI.
 
 import os
 import re
-import tempfile
 import shutil
+import tempfile
 from pathlib import Path
-from typing import List, Optional, Tuple
-
+from typing import Optional
 
 # ====================================================
 # Constants
@@ -55,7 +54,7 @@ Options:
 def initialize_patterns_file() -> None:
     """Initialize the patterns file if it doesn't exist."""
     if not os.path.isfile(PATTERNS_FILE):
-        with open(PATTERNS_FILE, 'w') as f:
+        with open(PATTERNS_FILE, 'w'):
             pass  # Create empty file
 
 
@@ -63,14 +62,14 @@ def initialize_patterns_file() -> None:
 # Function: get_saved_patterns
 # This function retrieves all saved patterns from the patterns file.
 # ====================================================
-def get_saved_patterns() -> List[str]:
+def get_saved_patterns() -> list[str]:
     """Get all saved patterns from the patterns file."""
     initialize_patterns_file()
-    
+
     if not os.path.getsize(PATTERNS_FILE) > 0:
         return []
-    
-    with open(PATTERNS_FILE, 'r') as f:
+
+    with open(PATTERNS_FILE) as f:
         return [line.strip() for line in f.readlines()]
 
 
@@ -78,17 +77,17 @@ def get_saved_patterns() -> List[str]:
 # Function: list_patterns
 # This function lists all currently saved patterns.
 # ====================================================
-def list_patterns() -> Tuple[bool, str]:
+def list_patterns() -> tuple[bool, str]:
     """List all saved patterns.
-    
+
     Returns:
         Tuple[bool, str]: Success status and message
     """
     patterns = get_saved_patterns()
-    
+
     if not patterns:
         return True, "No patterns are currently saved"
-    
+
     return True, "Saved patterns:\n" + "\n".join(patterns)
 
 
@@ -97,12 +96,12 @@ def list_patterns() -> Tuple[bool, str]:
 # This function creates a .cursorignore file in the specified directory,
 # populating it with saved patterns if any exist.
 # ====================================================
-def create_cursorignore(directory: Optional[str] = None) -> Tuple[bool, str]:
+def create_cursorignore(directory: Optional[str] = None) -> tuple[bool, str]:
     """Create a .cursorignore file with saved patterns if it doesn't exist.
-    
+
     Args:
         directory: Optional directory path where to create the file. If None, uses current directory.
-    
+
     Returns:
         Tuple[bool, str]: Success status and message
     """
@@ -111,12 +110,12 @@ def create_cursorignore(directory: Optional[str] = None) -> Tuple[bool, str]:
         cursorignore_path = os.path.join(directory, CURSORIGNORE_FILE)
     else:
         cursorignore_path = CURSORIGNORE_FILE
-    
+
     if os.path.isfile(cursorignore_path):
         return True, f".cursorignore file already exists at {cursorignore_path}"
-    
+
     patterns = get_saved_patterns()
-    
+
     with open(cursorignore_path, 'w') as f:
         if patterns:
             f.write("\n".join(patterns) + "\n")
@@ -131,18 +130,18 @@ def create_cursorignore(directory: Optional[str] = None) -> Tuple[bool, str]:
 # ====================================================
 def pattern_exists(pattern: str, file_path: str) -> bool:
     """Check if a pattern exists in a file.
-    
+
     Args:
         pattern: The pattern to check for
         file_path: The file to check in
-        
+
     Returns:
         bool: True if pattern exists, False otherwise
     """
     if not os.path.isfile(file_path):
         return False
-    
-    with open(file_path, 'r') as f:
+
+    with open(file_path) as f:
         content = f.read()
         # Use regex to match the exact pattern on a line
         return bool(re.search(f"^{re.escape(pattern)}$", content, re.MULTILINE))
@@ -153,20 +152,20 @@ def pattern_exists(pattern: str, file_path: str) -> bool:
 # This function adds a new pattern to both the .cursorignore file
 # and the saved patterns file.
 # ====================================================
-def add_pattern(pattern: str) -> Tuple[bool, str]:
+def add_pattern(pattern: str) -> tuple[bool, str]:
     """Add a pattern to .cursorignore and save it.
-    
+
     Args:
         pattern: The pattern to add
-        
+
     Returns:
         Tuple[bool, str]: Success status and message
     """
     if not pattern:
         return False, "Error: No pattern specified to add\nUsage: cursorignore --add PATTERN"
-    
+
     messages = []
-    
+
     # Add to saved patterns if not already there
     if not pattern_exists(pattern, PATTERNS_FILE):
         with open(PATTERNS_FILE, 'a') as f:
@@ -174,7 +173,7 @@ def add_pattern(pattern: str) -> Tuple[bool, str]:
         messages.append(f"Added '{pattern}' to saved patterns")
     else:
         messages.append(f"Pattern '{pattern}' is already in saved patterns")
-    
+
     # Create or update .cursorignore file if it exists
     if os.path.isfile(CURSORIGNORE_FILE):
         if not pattern_exists(pattern, CURSORIGNORE_FILE):
@@ -183,7 +182,7 @@ def add_pattern(pattern: str) -> Tuple[bool, str]:
             messages.append(f"Added '{pattern}' to .cursorignore")
         else:
             messages.append(f"Pattern '{pattern}' already exists in .cursorignore")
-    
+
     return True, "\n".join(messages)
 
 
@@ -193,29 +192,29 @@ def add_pattern(pattern: str) -> Tuple[bool, str]:
 # ====================================================
 def remove_pattern_from_file(pattern: str, file_path: str) -> bool:
     """Remove a pattern from a file.
-    
+
     Args:
         pattern: The pattern to remove
         file_path: The file to remove from
-        
+
     Returns:
         bool: True if pattern was removed, False otherwise
     """
     if not os.path.isfile(file_path):
         return False
-    
+
     if not pattern_exists(pattern, file_path):
         return False
-    
+
     # Create a temporary file
     fd, temp_path = tempfile.mkstemp()
     try:
         with os.fdopen(fd, 'w') as temp_file:
-            with open(file_path, 'r') as source_file:
+            with open(file_path) as source_file:
                 for line in source_file:
                     if line.strip() != pattern:
                         temp_file.write(line)
-        
+
         # Replace the original file with the temp file
         shutil.move(temp_path, file_path)
         return True
@@ -231,31 +230,31 @@ def remove_pattern_from_file(pattern: str, file_path: str) -> bool:
 # This function removes a pattern from both the .cursorignore file
 # and the saved patterns file.
 # ====================================================
-def remove_pattern(pattern: str) -> Tuple[bool, str]:
+def remove_pattern(pattern: str) -> tuple[bool, str]:
     """Remove a pattern from .cursorignore and saved patterns.
-    
+
     Args:
         pattern: The pattern to remove
-        
+
     Returns:
         Tuple[bool, str]: Success status and message
     """
     if not pattern:
         return False, "Error: No pattern specified to remove\nUsage: cursorignore --remove PATTERN"
-    
+
     messages = []
-    
+
     # Remove from saved patterns
     if remove_pattern_from_file(pattern, PATTERNS_FILE):
         messages.append(f"Removed '{pattern}' from saved patterns")
     else:
         messages.append(f"Pattern '{pattern}' not found in saved patterns")
-    
+
     # Also remove from current .cursorignore if it exists
     if os.path.isfile(CURSORIGNORE_FILE):
         if remove_pattern_from_file(pattern, CURSORIGNORE_FILE):
             messages.append(f"Removed '{pattern}' from .cursorignore")
-    
+
     return True, "\n".join(messages)
 
 
@@ -263,20 +262,20 @@ def remove_pattern(pattern: str) -> Tuple[bool, str]:
 # Function: process_command
 # This function processes the command-line arguments and calls the appropriate functions.
 # ====================================================
-def process_command(args: Optional[List[str]] = None) -> Tuple[bool, str]:
+def process_command(args: Optional[list[str]] = None) -> tuple[bool, str]:
     """Process a cursorignore command.
-    
+
     Args:
         args: Command line arguments (optional)
-        
+
     Returns:
         Tuple[bool, str]: Success status and message
     """
     if args is None or len(args) == 0:
         return create_cursorignore()
-    
+
     command = args[0]
-    
+
     if command == "--help":
         return True, show_help()
     elif command == "--list":

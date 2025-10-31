@@ -7,7 +7,7 @@ Utilities for configuring Rich-based logging consistently across the CLI.
 from __future__ import annotations
 
 import logging
-from typing import Iterable
+from collections.abc import Iterable
 
 from rich.logging import RichHandler
 

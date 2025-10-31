@@ -11,23 +11,24 @@ It defines the agents and methods needed for the initial exploration of the proj
 # ====================================================
 
 import asyncio  # For running asynchronous tasks concurrently.
-import json     # For handling JSON data.
-from typing import Dict, List, Any  # For type hinting.
-from config.prompts.phase_1_prompts import ( # Prompts used for configuring the agents in Phase 1.
-    PHASE_1_BASE_PROMPT,
-    STRUCTURE_AGENT_PROMPT,
+import json  # For handling JSON data.
+from typing import Any  # For type hinting.
+
+from config.prompts.phase_1_prompts import (  # Prompts used for configuring the agents in Phase 1.
     DEPENDENCY_AGENT_PROMPT,
-    TECH_STACK_AGENT_PROMPT,
+    PHASE_1_BASE_PROMPT,
     RESEARCHER_AGENT_PROMPT,
+    STRUCTURE_AGENT_PROMPT,
+    TECH_STACK_AGENT_PROMPT,
 )
-from core.agents.factory.factory import get_architect_for_phase, get_researcher_architect
 from config.tools import TOOL_SETS
+from core.agents.factory.factory import get_architect_for_phase, get_researcher_architect
+
 try:
     from core.agent_tools.web_search.tavily import run_tavily_search as _run_tavily_search
 except Exception:
     _run_tavily_search = None
 import logging  # For logging information about the execution
-from rich import print
 
 # ====================================================
 # Phase 1 Analysis Class
@@ -40,11 +41,11 @@ MAX_RESEARCHER_TOOL_ITERATIONS = 3
 class Phase1Analysis:
     """
     Class responsible for Phase 1 (Initial Discovery) of the project analysis.
-    
+
     This phase uses Anthropic models to perform initial exploration of the project,
     analyzing directory structure, dependencies, and technology stack.
     """
-    
+
     # ----------------------------------------------------
     # Initialization
     # Sets up the agents required for the initial discovery.
@@ -77,7 +78,7 @@ class Phase1Analysis:
                 prompt_template=PHASE_1_BASE_PROMPT
             )
         ]
-        
+
         # Initialize the researcher agent separately
         self.researcher_architect = get_researcher_architect(
             name=RESEARCHER_AGENT_PROMPT["name"],
@@ -85,19 +86,19 @@ class Phase1Analysis:
             responsibilities=RESEARCHER_AGENT_PROMPT["responsibilities"],
             prompt_template=PHASE_1_BASE_PROMPT
         )
-    
+
     # ----------------------------------------------------
     # Run Method
     # Executes the Initial Discovery phase.
     # ----------------------------------------------------
-    async def run(self, tree: List[str], package_info: Dict) -> Dict:
+    async def run(self, tree: list[str], package_info: dict) -> dict:
         """
         Run the Initial Discovery Phase.
-        
+
         Args:
             tree: List of strings representing the project directory tree
             package_info: Dictionary containing information about project dependencies
-            
+
         Returns:
             Dictionary containing the results of the phase
         """
@@ -106,13 +107,13 @@ class Phase1Analysis:
             "tree_structure": tree,
             "package_info": package_info
         }
-        
+
         logging.info("[bold]Phase 1, Part 1:[/bold] Starting initial analysis with 3 agents")
-        
+
         # Run initial architects in parallel
         architect_tasks = [architect.analyze(initial_context) for architect in self.initial_architects]
         initial_results = await asyncio.gather(*architect_tasks)
-        
+
         logging.info("[bold green]Phase 1, Part 1:[/bold green] All initial agents have completed their analysis")
 
         # Part 2: Run the researcher agent
@@ -120,23 +121,23 @@ class Phase1Analysis:
 
         # Combine dependency and tech stack findings for the researcher
         # The Dependency agent is the second one (index 1), Tech Stack is the third (index 2)
-        dependency_findings = initial_results[1] 
+        dependency_findings = initial_results[1]
         tech_stack_findings = initial_results[2]
 
         research_context = {
             "dependencies": dependency_findings,
             "tech_stack": tech_stack_findings
         }
-        
+
         # Provide web-search tool to the researcher
         researcher_tools = TOOL_SETS.get("RESEARCHER_TOOLS", [])
         research_findings = await self._run_researcher_with_tools(
             research_context,
             researcher_tools
         )
-        
+
         logging.info("[bold green]Phase 1, Part 2:[/bold green] Documentation research complete")
-        
+
         # Return the combined results.
         return {
             "phase": "Initial Discovery",
@@ -146,23 +147,23 @@ class Phase1Analysis:
 
     async def _run_researcher_with_tools(
         self,
-        research_context: Dict[str, Any],
-        researcher_tools: List[Any]
-    ) -> Dict[str, Any]:
+        research_context: dict[str, Any],
+        researcher_tools: list[Any]
+    ) -> dict[str, Any]:
         """Execute the researcher architect, completing tool loops when required."""
 
         # Preserve the base context so each iteration starts from shared facts
         base_context = dict(research_context)
-        executed_tools: List[Dict[str, Any]] = []
-        latest_response: Dict[str, Any] = {}
+        executed_tools: list[dict[str, Any]] = []
+        latest_response: dict[str, Any] = {}
 
-        context_payload: Dict[str, Any] = dict(base_context)
+        context_payload: dict[str, Any] = dict(base_context)
 
         for iteration in range(1, MAX_RESEARCHER_TOOL_ITERATIONS + 1):
             latest_response = await self.researcher_architect.analyze(context_payload, tools=researcher_tools)
 
             # Collect and execute tool requests, if any
-            latest_tool_runs: List[Dict[str, Any]] = []
+            latest_tool_runs: list[dict[str, Any]] = []
             try:
                 latest_tool_runs.extend(
                     await self._handle_anthropic_tool_calls(latest_response.get("tool_calls"))
@@ -206,16 +207,16 @@ class Phase1Analysis:
 
         return latest_response
 
-    async def _handle_anthropic_tool_calls(self, tool_calls: Any) -> List[Dict[str, Any]]:
+    async def _handle_anthropic_tool_calls(self, tool_calls: Any) -> list[dict[str, Any]]:
         """Execute Anthropic-style tool calls and return structured results."""
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         if not tool_calls:
             return results
 
         for call in tool_calls or []:
             fn_name = (call.get("function", {}) or {}).get("name") or call.get("name")
             raw_args = (call.get("function", {}) or {}).get("arguments")
-            args: Dict[str, Any] = {}
+            args: dict[str, Any] = {}
             if isinstance(raw_args, str):
                 try:
                     args = json.loads(raw_args)
@@ -228,9 +229,9 @@ class Phase1Analysis:
 
         return results
 
-    async def _handle_gemini_function_calls(self, function_calls: Any) -> List[Dict[str, Any]]:
+    async def _handle_gemini_function_calls(self, function_calls: Any) -> list[dict[str, Any]]:
         """Execute Gemini-style function calls and return structured results."""
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         if not function_calls:
             return results
 
@@ -241,7 +242,7 @@ class Phase1Analysis:
 
         return results
 
-    async def _execute_supported_tool(self, fn_name: Any, args: Dict[str, Any]) -> Dict[str, Any]:
+    async def _execute_supported_tool(self, fn_name: Any, args: dict[str, Any]) -> dict[str, Any]:
         """Run a supported tool and return a normalized execution record."""
         if fn_name == "tavily_web_search":
             query = args.get("query", "")

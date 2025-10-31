@@ -8,27 +8,25 @@ the `MODEL_CONFIG` dictionary.
 Users can specify a different model for each phase and whether to use reasoning.
 """
 
-from typing import Dict
 
 from core.agents.base import ModelProvider
 from core.types.models import (
-    ModelConfig,
     CLAUDE_BASIC,
     CLAUDE_WITH_REASONING,
-    O3_HIGH,
-    O3_MEDIUM,
-    O3_LOW,
-    O4_MINI_HIGH,
-    O4_MINI_MEDIUM,
-    O4_MINI_LOW,
-    GPT4_1_DEFAULT,
-    GPT4_1_CREATIVE,
-    GPT4_1_PRECISE,
-    DEEPSEEK_REASONER,
     DEEPSEEK_CHAT,
+    DEEPSEEK_REASONER,
     GEMINI_FLASH,
     GEMINI_PRO,
-    create_researcher_config,
+    GPT4_1_CREATIVE,
+    GPT4_1_DEFAULT,
+    GPT4_1_PRECISE,
+    O3_HIGH,
+    O3_LOW,
+    O3_MEDIUM,
+    O4_MINI_HIGH,
+    O4_MINI_LOW,
+    O4_MINI_MEDIUM,
+    ModelConfig,
 )
 
 # ====================================================
@@ -36,7 +34,7 @@ from core.types.models import (
 # Define which model to use for each phase.
 # ====================================================
 
-MODEL_PRESETS: Dict[str, Dict[str, object]] = {
+MODEL_PRESETS: dict[str, dict[str, object]] = {
     "gemini-flash": {
         "config": GEMINI_FLASH,
         "label": "Gemini 2.5 Flash",
@@ -129,7 +127,7 @@ MODEL_PRESETS: Dict[str, Dict[str, object]] = {
     },
 }
 
-MODEL_PRESET_DEFAULTS: Dict[str, str] = {
+MODEL_PRESET_DEFAULTS: dict[str, str] = {
     "phase1": "gemini-flash",
     "phase2": "gemini-flash",
     "phase3": "gemini-flash",
@@ -140,8 +138,8 @@ MODEL_PRESET_DEFAULTS: Dict[str, str] = {
 }
 
 
-def _build_default_model_config() -> Dict[str, ModelConfig]:
-    config: Dict[str, ModelConfig] = {}
+def _build_default_model_config() -> dict[str, ModelConfig]:
+    config: dict[str, ModelConfig] = {}
     for phase, preset_key in MODEL_PRESET_DEFAULTS.items():
         preset = MODEL_PRESETS[preset_key]
         config[phase] = preset["config"]

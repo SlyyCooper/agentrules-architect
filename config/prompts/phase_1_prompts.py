@@ -68,11 +68,11 @@ RESEARCHER_AGENT_PROMPT = {
 def format_agent_prompt(agent_config, context):
     """
     Format a prompt for a specific agent using the base template.
-    
+
     Args:
         agent_config: Dictionary containing agent name, role, and responsibilities
         context: Dictionary containing the context for analysis
-        
+
     Returns:
         Formatted prompt string
     """

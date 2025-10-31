@@ -6,7 +6,6 @@ These prompts are used by the Anthropic agent to generate the final report.
 """
 
 import json
-from typing import Dict
 
 # Prompt for the Report Agent (Claude)
 PHASE_5_PROMPT = """As the Report Agent, create a comprehensive final report from all analysis phases:
@@ -21,13 +20,13 @@ Your tasks:
 4. Highlight key discoveries
 5. Prepare final report"""
 
-def format_phase5_prompt(results: Dict) -> str:
+def format_phase5_prompt(results: dict) -> str:
     """
     Format the Phase 5 prompt with the results from all previous phases.
-    
+
     Args:
         results: Dictionary containing the results from all previous phases
-        
+
     Returns:
         Formatted prompt string
     """

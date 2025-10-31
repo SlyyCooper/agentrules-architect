@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+
 from dotenv import load_dotenv
-import sys
 
 # Load environment variables from .env file if it exists
 print("Checking for .env file...")
@@ -29,4 +29,4 @@ for key_name, key_value in api_keys.items():
     else:
         print(f"✗ {key_name} is not set")
 
-print("\nEnvironment test complete.") 
+print("\nEnvironment test complete.")

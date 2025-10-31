@@ -1,5 +1,5 @@
-from core.agents.openai import OpenAIArchitect
 from core.agents.base import ReasoningMode
+from core.agents.openai import OpenAIArchitect
 
 
 def test_openai_params_reasoning_effort_for_o3():

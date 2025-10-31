@@ -7,7 +7,6 @@ modifying the core logic of the agents.
 """
 
 import json
-from typing import Dict, List
 
 # Base prompt template for Phase 2 (Methodical Planning)
 PHASE_2_PROMPT = """You are a project documentation planner tasked with processing the <initial_findings>...</initial_findings> from the given <project_structure>...</project_structure> in order to:
@@ -81,23 +80,23 @@ Describe your approach or reasoning here.
 
 """
 
-def format_phase2_prompt(phase1_results: Dict, project_structure: List[str] = None) -> str:
+def format_phase2_prompt(phase1_results: dict, project_structure: list[str] = None) -> str:
     """
     Format the Phase 2 prompt with the Phase 1 results and project structure.
-    
+
     Args:
         phase1_results: Dictionary containing the results from Phase 1
         project_structure: List of strings representing the project tree structure
-        
+
     Returns:
         Formatted prompt string
     """
     # Format the project structure
     if project_structure is None:
         project_structure = ["No project structure provided"]
-    
+
     structure_str = "\n".join(project_structure)
-    
+
     return PHASE_2_PROMPT.format(
         phase1_results=json.dumps(phase1_results, indent=2),
         project_structure=structure_str

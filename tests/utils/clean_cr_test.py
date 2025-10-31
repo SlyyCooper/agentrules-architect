@@ -6,8 +6,8 @@ Simple test for clean_cursorrules functionality.
 """
 
 import os
-import sys
 import shutil
+import sys
 from pathlib import Path
 
 # Add project root to path
@@ -37,11 +37,11 @@ success, message = clean_cursorrules_file(str(output_file))
 # Check results
 if success:
     print(f"Success: {message}")
-    
+
     # Verify file now starts with "You are"
-    with open(output_file, 'r', encoding='utf-8') as f:
+    with open(output_file, encoding='utf-8') as f:
         content = f.read()
-    
+
     if content.strip().startswith("You are"):
         print("Verification passed: File now starts with 'You are'")
     else:

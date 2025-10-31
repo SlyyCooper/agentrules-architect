@@ -6,7 +6,6 @@ These prompts are used by the OpenAI agent to generate the final analysis of the
 """
 
 import json
-from typing import Dict, List
 from datetime import datetime
 
 # Prompt for the Final Analysis (OpenAI)
@@ -21,7 +20,7 @@ You are an AI prompt engineer specializing in Cursor rules generation for the Cu
 3. **Behavioral Guidance**: Control how the AI interacts, reasons, and responds
 4. **Consistency Enforcement**: Ensure coherent development patterns across a project
 
-Your task is to thoroughly analyze both the project report and the project structure provided within specific XML tags in order to create a tailored system prompt in a CRS-1 format. 
+Your task is to thoroughly analyze both the project report and the project structure provided within specific XML tags in order to create a tailored system prompt in a CRS-1 format.
 
 # CRS-1: The Cursor Rules Specification
 
@@ -389,27 +388,27 @@ The CRS-1 specification provides a structured framework for creating effective c
 
 """
 
-def format_final_analysis_prompt(consolidated_report: Dict, project_structure: List[str] = None) -> str:
+def format_final_analysis_prompt(consolidated_report: dict, project_structure: list[str] = None) -> str:
     """
     Format the Final Analysis prompt with the consolidated report and project structure.
-    
+
     Args:
         consolidated_report: Dictionary containing the consolidated report
         project_structure: List of strings representing the project tree structure
-        
+
     Returns:
         Formatted prompt string
     """
     # Format the project structure
     if project_structure is None:
         project_structure = ["No project structure provided"]
-    
+
     structure_str = "\n".join(project_structure)
-    
+
     # Get current month and year
     current_month = datetime.now().strftime("%B")
     current_year = datetime.now().strftime("%Y")
-    
+
     return FINAL_ANALYSIS_PROMPT.format(
         report=json.dumps(consolidated_report, indent=2),
         project_structure=structure_str,

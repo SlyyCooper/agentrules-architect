@@ -1,5 +1,3 @@
-import asyncio
-import json
 import unittest
 
 from core.agents.openai import OpenAIArchitect

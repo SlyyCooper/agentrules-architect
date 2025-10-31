@@ -1,6 +1,6 @@
-from core.utils.model_config_helper import get_model_config_name
-from core.types.models import GEMINI_FLASH
 from core.agents.gemini import GeminiArchitect
+from core.types.models import GEMINI_FLASH
+from core.utils.model_config_helper import get_model_config_name
 
 
 def test_get_model_config_name_predefined_constant():

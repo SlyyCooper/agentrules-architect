@@ -1,8 +1,8 @@
-import os
-import logging
-from typing import Dict, Optional, List, Any
 import json
-import asyncio
+import logging
+import os
+from typing import Any, Optional
+
 from openai import OpenAI
 
 # Import the base classes
@@ -18,34 +18,34 @@ logger = logging.getLogger("project_extractor")
 class DeepSeekArchitect(BaseArchitect):
     """
     Architect class for interacting with DeepSeek models.
-    
+
     This class implements the BaseArchitect abstract class to provide
     methods for using both DeepSeek-Chat and DeepSeek-Reasoner models.
-    
+
     The API is OpenAI-compatible. 'deepseek-chat' supports tool calling,
     while 'deepseek-reasoner' provides a 'reasoning_content' field.
     """
-    
+
     def __init__(
-        self, 
+        self,
         model_name: str = "deepseek-chat",
         reasoning: ReasoningMode = ReasoningMode.DISABLED,
         temperature: Optional[float] = None,
         name: Optional[str] = None,
         role: Optional[str] = None,
-        responsibilities: Optional[List[str]] = None,
+        responsibilities: Optional[list[str]] = None,
         prompt_template: Optional[str] = None,
         base_url: str = "https://api.deepseek.com",
-        tools_config: Optional[Dict] = None
+        tools_config: Optional[dict] = None
     ):
         """
         Initialize a DeepSeek architect.
-        
+
         Args:
             model_name: The DeepSeek model to use (e.g., "deepseek-chat", "deepseek-reasoner")
             reasoning: Enabled for "deepseek-reasoner", disabled otherwise.
             temperature: Not supported for DeepSeek models.
-            name: Optional name of the architect 
+            name: Optional name of the architect
             role: Optional role description
             responsibilities: Optional list of responsibilities
             prompt_template: Optional custom prompt template
@@ -57,9 +57,9 @@ class DeepSeekArchitect(BaseArchitect):
             reasoning = ReasoningMode.ENABLED
         else:
             reasoning = ReasoningMode.DISABLED
-        
+
         temperature = None  # Not supported by DeepSeek models
-        
+
         super().__init__(
             provider=ModelProvider.DEEPSEEK,
             model_name=model_name,
@@ -72,7 +72,7 @@ class DeepSeekArchitect(BaseArchitect):
         )
         self.prompt_template = prompt_template or self._get_default_prompt_template()
         self.base_url = base_url
-        
+
         # Setup DeepSeek client (using OpenAI SDK)
         self.client = OpenAI(
             api_key=os.environ.get("DEEPSEEK_API_KEY"),
@@ -94,25 +94,29 @@ Context:
 Provide your analysis in a structured format with clear sections and actionable insights.
 """
 
-    def format_prompt(self, context: Dict[str, Any]) -> str:
+    def format_prompt(self, context: dict[str, Any]) -> str:
         """Format the analysis prompt with the provided context."""
-        responsibilities_text = "\n".join([f"- {r}" for r in self.responsibilities]) if self.responsibilities else "Analyzing code architecture and patterns"
-        
+        responsibilities_text = (
+            "\n".join(f"- {r}" for r in self.responsibilities)
+            if self.responsibilities
+            else "Analyzing code architecture and patterns"
+        )
+
         return self.prompt_template.format(
             agent_name=self.name or "DeepSeek Architect",
             agent_role=self.role or "code architecture analysis",
             agent_responsibilities=responsibilities_text,
             context=json.dumps(context, indent=2)
         )
-    
-    def _get_api_parameters(self, messages: List[Dict], tools: Optional[List[Any]] = None) -> Dict:
+
+    def _get_api_parameters(self, messages: list[dict], tools: Optional[list[Any]] = None) -> dict:
         """
         Get the API parameters for a DeepSeek model.
-        
+
         Args:
             messages: The messages to send to the model
             tools: Optional list of tools for function calling
-            
+
         Returns:
             Dictionary of API parameters
         """
@@ -120,25 +124,25 @@ Provide your analysis in a structured format with clear sections and actionable 
             "model": self.model_name,
             "messages": messages,
         }
-        
+
         if self.model_name == "deepseek-reasoner":
             params["max_tokens"] = 4000
-        
+
         # Add tools if provided (both models support this)
         if tools:
             params["tools"] = tools
             params["tool_choice"] = "auto"
-            
+
         return params
 
-    async def analyze(self, context: Dict, tools: Optional[List[Any]] = None) -> Dict:
+    async def analyze(self, context: dict, tools: Optional[list[Any]] = None) -> dict:
         """
         Perform analysis on the provided context using a DeepSeek model.
-        
+
         Args:
             context: Dictionary containing the information to analyze
             tools: Optional list of tools for function calling.
-            
+
         Returns:
             Dictionary containing the analysis results, reasoning, and/or tool calls.
         """
@@ -148,10 +152,10 @@ Provide your analysis in a structured format with clear sections and actionable 
                 content = context["formatted_prompt"]
             else:
                 content = self.format_prompt(context)
-            
+
             # Create messages format
             messages = [{"role": "user", "content": content}]
-            
+
             # Determine which tools to use
             final_tools = None
             # Only enable tools for non-reasoner model
@@ -165,22 +169,25 @@ Provide your analysis in a structured format with clear sections and actionable 
 
             # Get API parameters, passing tools if available.
             params = self._get_api_parameters(messages, tools=final_tools)
-            
+
             # Get the model configuration name
             from core.utils.model_config_helper import get_model_config_name
             model_config_name = get_model_config_name(self)
-            
+
             agent_name = self.name or f"DeepSeek {self.model_name.replace('-', ' ').title()}"
-            logger.info(f"[bold teal]{agent_name}:[/bold teal] Sending request to {self.model_name} (Config: {model_config_name})" +
-                        (" with tools enabled" if tools else ""))
-            
+            details = " with tools enabled" if tools else ""
+            logger.info(
+                f"[bold teal]{agent_name}:[/bold teal] Sending request to {self.model_name} "
+                f"(Config: {model_config_name}){details}"
+            )
+
             # Call the DeepSeek API via OpenAI SDK
             response = self.client.chat.completions.create(**params)
-            
+
             logger.info(f"[bold green]{agent_name}:[/bold green] Received response from {self.model_name}")
-            
+
             message = response.choices[0].message
-            
+
             # Prepare results dictionary
             results = {
                 "agent": agent_name,
@@ -204,7 +211,7 @@ Provide your analysis in a structured format with clear sections and actionable 
                             "name": call.function.name,
                             "arguments": call.function.arguments  # Arguments are a JSON string
                         }
-                    } 
+                    }
                     for call in message.tool_calls if call.type == 'function'
                 ]
                 # Clear findings if only tool calls are present
@@ -219,49 +226,55 @@ Provide your analysis in a structured format with clear sections and actionable 
                 "agent": agent_name,
                 "error": str(e)
             }
-    
+
     # Phase-specific methods
-    async def create_analysis_plan(self, phase1_results: Dict, prompt: Optional[str] = None) -> Dict:
+    async def create_analysis_plan(self, phase1_results: dict, prompt: Optional[str] = None) -> dict:
         """Create an analysis plan based on Phase 1 results."""
-        context = {"phase1_results": phase1_results, "formatted_prompt": prompt} if prompt else {"phase1_results": phase1_results}
+        context = {"phase1_results": phase1_results}
+        if prompt:
+            context["formatted_prompt"] = prompt
         result = await self.analyze(context)
-        
+
         return {
             "agent": self.name or "DeepSeek Architect",
             "plan": result.get("findings", "No plan generated"),
             "reasoning": result.get("reasoning"),
             "error": result.get("error")
         }
-    
-    async def synthesize_findings(self, phase3_results: Dict, prompt: Optional[str] = None) -> Dict:
+
+    async def synthesize_findings(self, phase3_results: dict, prompt: Optional[str] = None) -> dict:
         """Synthesize findings from Phase 3."""
-        context = {"phase3_results": phase3_results, "formatted_prompt": prompt} if prompt else {"phase3_results": phase3_results}
+        context = {"phase3_results": phase3_results}
+        if prompt:
+            context["formatted_prompt"] = prompt
         result = await self.analyze(context)
-        
+
         return {
             "agent": self.name or "DeepSeek Architect",
             "analysis": result.get("findings", "No synthesis generated"),
             "reasoning": result.get("reasoning"),
             "error": result.get("error")
         }
-    
-    async def final_analysis(self, consolidated_report: Dict, prompt: Optional[str] = None) -> Dict:
+
+    async def final_analysis(self, consolidated_report: dict, prompt: Optional[str] = None) -> dict:
         """Provide final analysis on the consolidated report."""
-        context = {"consolidated_report": consolidated_report, "formatted_prompt": prompt} if prompt else {"consolidated_report": consolidated_report}
+        context = {"consolidated_report": consolidated_report}
+        if prompt:
+            context["formatted_prompt"] = prompt
         result = await self.analyze(context)
-        
+
         return {
             "agent": self.name or "DeepSeek Architect",
             "analysis": result.get("findings", "No final analysis generated"),
             "reasoning": result.get("reasoning"),
             "error": result.get("error")
         }
-    
-    async def consolidate_results(self, all_results: Dict, prompt: Optional[str] = None) -> Dict:
+
+    async def consolidate_results(self, all_results: dict, prompt: Optional[str] = None) -> dict:
         """Consolidate all phase results."""
         context = {"all_results": all_results, "formatted_prompt": prompt} if prompt else {"all_results": all_results}
         result = await self.analyze(context)
-        
+
         return {
             "phase": "Consolidation",
             "report": result.get("findings", "No report generated"),
@@ -273,20 +286,20 @@ Provide your analysis in a structured format with clear sections and actionable 
 class DeepSeekAgent:
     """
     Agent class for interacting with DeepSeek Reasoner model.
-    
+
     This class provides a simpler interface for DeepSeek Reasoner focused on
     specific analysis tasks.
     """
-    
+
     def __init__(
-        self, 
+        self,
         name: Optional[str] = None,
         role: Optional[str] = None,
-        responsibilities: Optional[List[str]] = None
+        responsibilities: Optional[list[str]] = None
     ):
         """
         Initialize a DeepSeek Reasoner agent.
-        
+
         Args:
             name: Optional agent name
             role: Optional role description
@@ -298,19 +311,19 @@ class DeepSeekAgent:
             role=role,
             responsibilities=responsibilities
         )
-    
-    async def analyze(self, context: Dict) -> Dict:
+
+    async def analyze(self, context: dict) -> dict:
         """Analyze the provided context."""
         return await self.architect.analyze(context)
-        
-    async def create_analysis_plan(self, phase1_results: Dict, prompt: Optional[str] = None) -> Dict:
+
+    async def create_analysis_plan(self, phase1_results: dict, prompt: Optional[str] = None) -> dict:
         """Create an analysis plan based on Phase 1 results."""
         return await self.architect.create_analysis_plan(phase1_results, prompt)
-    
-    async def synthesize_findings(self, phase3_results: Dict, prompt: Optional[str] = None) -> Dict:
+
+    async def synthesize_findings(self, phase3_results: dict, prompt: Optional[str] = None) -> dict:
         """Synthesize findings from Phase 3."""
         return await self.architect.synthesize_findings(phase3_results, prompt)
-    
-    async def final_analysis(self, consolidated_report: Dict, prompt: Optional[str] = None) -> Dict:
+
+    async def final_analysis(self, consolidated_report: dict, prompt: Optional[str] = None) -> dict:
         """Provide final analysis on the consolidated report."""
         return await self.architect.final_analysis(consolidated_report, prompt)

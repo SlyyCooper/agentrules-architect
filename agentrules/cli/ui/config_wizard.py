@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Any
 
 import questionary
 
@@ -28,7 +28,7 @@ def configure_provider_keys(context: CliContext) -> None:
 
     while True:
         states = configuration.list_provider_states()
-        choices: List[questionary.Choice] = [
+        choices: list[questionary.Choice] = [
             questionary.Choice(
                 title=f"{state.name.title()} ({state.env_var}) [{mask_secret(state.api_key)}]",
                 value=state.name,
@@ -90,26 +90,26 @@ def configure_models(context: CliContext) -> None:
     active = configuration.get_active_presets()
     updated = False
 
-    def _split_preset_label(label: str) -> Tuple[str, Optional[str]]:
+    def _split_preset_label(label: str) -> tuple[str, str | None]:
         if " (" in label and label.endswith(")"):
             base, remainder = label.split(" (", 1)
             return base, remainder[:-1]
         return label, None
 
-    def _variant_display_text(variant_label: Optional[str]) -> str:
+    def _variant_display_text(variant_label: str | None) -> str:
         if not variant_label:
             return "Default"
         return variant_label[0].upper() + variant_label[1:]
 
-    def _current_display(key: Optional[str]) -> str:
+    def _current_display(key: str | None) -> str:
         info = model_config.get_preset_info(key) if key else None
         if not info:
             return "Not configured"
         return f"{info.label} [{info.provider_display}]"
 
     while True:
-        phase_choices: List[questionary.Choice | questionary.Separator] = []
-        handled_phases: Set[str] = set()
+        phase_choices: list[questionary.Choice | questionary.Separator] = []
+        handled_phases: set[str] = set()
 
         for phase in model_config.PHASE_SEQUENCE:
             if phase in handled_phases:
@@ -172,7 +172,7 @@ def configure_models(context: CliContext) -> None:
         current_key = active.get(phase, default_key)
         default_info = model_config.get_preset_info(default_key) if default_key else None
 
-        model_choices: List[questionary.Choice] = []
+        model_choices: list[questionary.Choice] = []
         if default_info:
             model_choices.append(
                 questionary.Choice(
@@ -183,8 +183,8 @@ def configure_models(context: CliContext) -> None:
         else:
             model_choices.append(questionary.Choice(title="Reset to default", value="__RESET__"))
 
-        grouped_entries: List[Dict[str, Any]] = []
-        grouped_lookup: Dict[Tuple[str, str, str], Dict[str, Any]] = {}
+        grouped_entries: list[dict[str, Any]] = []
+        grouped_lookup: dict[tuple[str, str, str], dict[str, Any]] = {}
         for preset in presets:
             base_label, variant_label = _split_preset_label(preset.label)
             group_key = (preset.provider_slug, base_label, preset.provider_display)
@@ -204,7 +204,7 @@ def configure_models(context: CliContext) -> None:
                 }
             )
 
-        group_selection_map: Dict[str, Dict[str, Any]] = {}
+        group_selection_map: dict[str, dict[str, Any]] = {}
         for idx, entry in enumerate(grouped_entries):
             variants = entry["variants"]
             if len(variants) == 1:
@@ -265,7 +265,7 @@ def configure_models(context: CliContext) -> None:
             entry = group_data["entry"]
             variants = group_data["variants"]
 
-            variant_choices: List[questionary.Choice] = []
+            variant_choices: list[questionary.Choice] = []
             for variant in variants:
                 variant_title = variant["variant_display"]
                 if variant["preset_key"] == group_data["default_key"]:

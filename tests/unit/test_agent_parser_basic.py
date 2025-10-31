@@ -1,10 +1,9 @@
-import json
 import xml.etree.ElementTree as ET
 
 from core.utils.parsers.agent_parser import (
+    clean_and_fix_xml,
     extract_from_json,
     extract_from_markdown_block,
-    clean_and_fix_xml,
     parse_agent_definition,
     parse_agents_from_phase2,
 )

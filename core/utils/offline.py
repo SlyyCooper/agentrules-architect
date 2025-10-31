@@ -7,10 +7,10 @@ DummyArchitects returning deterministic outputs and emits a Tavily
 tool call for the Researcher to exercise tool execution.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
-from core.agents.base import BaseArchitect, ReasoningMode, ModelProvider
 from config.agents import MODEL_CONFIG
+from core.agents.base import BaseArchitect, ModelProvider, ReasoningMode
 
 
 class DummyArchitect(BaseArchitect):
@@ -21,9 +21,9 @@ class DummyArchitect(BaseArchitect):
         reasoning: ReasoningMode = ReasoningMode.DISABLED,
         name: Optional[str] = None,
         role: Optional[str] = None,
-        responsibilities: Optional[List[str]] = None,
+        responsibilities: Optional[list[str]] = None,
         prompt_template: Optional[str] = None,
-        tools_config: Optional[Dict] = None,
+        tools_config: Optional[dict] = None,
     ) -> None:
         super().__init__(
             provider=provider,
@@ -36,7 +36,7 @@ class DummyArchitect(BaseArchitect):
         )
         self.prompt_template = prompt_template or ""
 
-    async def analyze(self, context: Dict[str, Any], tools: Optional[List[Any]] = None) -> Dict[str, Any]:
+    async def analyze(self, context: dict[str, Any], tools: Optional[list[Any]] = None) -> dict[str, Any]:
         agent_name = self.name or "Dummy Architect"
         if "Researcher" in (agent_name or "") and tools:
             return {
@@ -58,7 +58,7 @@ class DummyArchitect(BaseArchitect):
             "findings": f"Offline analysis by {agent_name}",
         }
 
-    async def create_analysis_plan(self, phase1_results: Dict, prompt: Optional[str] = None) -> Dict:
+    async def create_analysis_plan(self, phase1_results: dict, prompt: Optional[str] = None) -> dict:
         plan = (
             "<analysis_plan>\n"
             "  <agent_1 name=\"Code Analysis Agent\">\n"
@@ -71,20 +71,20 @@ class DummyArchitect(BaseArchitect):
         )
         return {"plan": plan}
 
-    async def synthesize_findings(self, phase3_results: Dict, prompt: Optional[str] = None) -> Dict:
+    async def synthesize_findings(self, phase3_results: dict, prompt: Optional[str] = None) -> dict:
         return {"analysis": "Offline synthesis of agent findings"}
 
-    async def final_analysis(self, consolidated_report: Dict, prompt: Optional[str] = None) -> Dict:
+    async def final_analysis(self, consolidated_report: dict, prompt: Optional[str] = None) -> dict:
         return {"analysis": "You are an offline final analysis assistant. Provide concise Cursor rules."}
 
-    async def consolidate_results(self, all_results: Dict, prompt: Optional[str] = None) -> Dict:
+    async def consolidate_results(self, all_results: dict, prompt: Optional[str] = None) -> dict:
         return {"phase": "Consolidation", "report": "Offline consolidated report"}
 
 
 def patch_factory_offline() -> None:
     from core.agents.factory import factory as fact
 
-    def _make_dummy(name: Optional[str], role: Optional[str], responsibilities: Optional[List[str]]):
+    def _make_dummy(name: Optional[str], role: Optional[str], responsibilities: Optional[list[str]]):
         model_config = next(iter(MODEL_CONFIG.values()))
         return DummyArchitect(
             provider=model_config.provider,
@@ -99,7 +99,7 @@ def patch_factory_offline() -> None:
         phase: str,
         name: Optional[str] = None,
         role: Optional[str] = None,
-        responsibilities: Optional[List[str]] = None,
+        responsibilities: Optional[list[str]] = None,
         prompt_template: Optional[str] = None,
     ) -> BaseArchitect:
         agent_name = name or f"{phase.title()} Architect (Offline)"
@@ -109,7 +109,7 @@ def patch_factory_offline() -> None:
     def get_researcher_architect_stub(
         name: str,
         role: str,
-        responsibilities: List[str],
+        responsibilities: list[str],
         prompt_template: Optional[str] = None,
     ) -> BaseArchitect:
         return _make_dummy(name or "Researcher Agent", role or "research", responsibilities)

@@ -12,14 +12,16 @@ This module is used by the main analysis process to perform specialized analysis
 # This section imports all the necessary libraries needed for the script.
 # ====================================================
 
+import asyncio  # For async operations
 import json  # Used for handling JSON data
 import logging  # Used for logging events and errors
-import asyncio  # For async operations
 import os  # For accessing environment variables
-from typing import Dict, List, Any, Optional  # Used for type hinting
+from typing import Any, Optional  # Used for type hinting
+
 from google import genai  # Google GenAI SDK (non-Vertex)
 from google.genai import types as genai_types  # Pydantic types
 from google.protobuf.struct_pb2 import Struct  # Handle legacy struct args if present
+
 from core.agents.base import BaseArchitect, ModelProvider, ReasoningMode  # Import the base class
 
 # ====================================================
@@ -45,30 +47,30 @@ logger = logging.getLogger("project_extractor")
 class GeminiArchitect(BaseArchitect):
     """
     Architect class for interacting with Google's Gemini models.
-    
+
     This class provides a structured way to create specialized agents that use
     Gemini models for different analysis tasks. It now supports tool usage.
     """
-    
+
     # ====================================================
     # Initialization Function (__init__)
     # This function sets up the new GeminiArchitect object when it's created.
     # ====================================================
-    
+
     def __init__(
-        self, 
+        self,
         model_name: str = "gemini-2.0-flash",
         reasoning: ReasoningMode = ReasoningMode.DISABLED,
         name: Optional[str] = None,
         role: Optional[str] = None,
-        responsibilities: Optional[List[str]] = None,
+        responsibilities: Optional[list[str]] = None,
         prompt_template: Optional[str] = None,
         api_key: Optional[str] = None,
-        tools_config: Optional[Dict] = None
+        tools_config: Optional[dict] = None
     ):
         """
         Initialize a Gemini architect with specific configurations.
-        
+
         Args:
             model_name: The Gemini model to use
             reasoning: Whether to enable thinking models
@@ -89,7 +91,7 @@ class GeminiArchitect(BaseArchitect):
             tools_config=tools_config
         )
         self.prompt_template = prompt_template or self._get_default_prompt_template()
-        
+
         # Try to get the API key from environment variable if not provided
         if api_key is None:
             api_key = os.environ.get("GEMINI_API_KEY")
@@ -102,43 +104,43 @@ class GeminiArchitect(BaseArchitect):
         except Exception:
             # Defer errors to call-site where we can surface a clear message
             self.client = None
-    
+
     # ====================================================
     # Default Prompt Template Function (_get_default_prompt_template)
     # This function returns the default prompt template for the agent.
     # ====================================================
-    
+
     def _get_default_prompt_template(self) -> str:
         """Get the default prompt template for the agent."""
         return """You are the {agent_name}, responsible for {agent_role}.
-        
+
         Your specific responsibilities are:
         {agent_responsibilities}
-        
+
         Analyze this project context and provide a detailed report focused on your domain:
-        
+
         {context}
-        
+
         Format your response as a structured report with clear sections and findings."""
-    
+
     # ====================================================
     # Prompt Formatting Function (format_prompt)
     # This function formats the prompt with specific agent information and context.
     # ====================================================
-    
-    def format_prompt(self, context: Dict[str, Any]) -> str:
+
+    def format_prompt(self, context: dict[str, Any]) -> str:
         """
         Format the prompt template with the agent's information and context.
-        
+
         Args:
             context: Dictionary containing the context for analysis
-            
+
         Returns:
             Formatted prompt string
         """
         responsibilities_str = "\n".join(f"- {r}" for r in self.responsibilities)
         context_str = json.dumps(context, indent=2)
-        
+
         return self.prompt_template.format(
             agent_name=self.name or "Gemini Architect",
             agent_role=self.role or "analyzing the project",
@@ -151,40 +153,42 @@ class GeminiArchitect(BaseArchitect):
     # This function sends a request to the Gemini API and processes the response.
     # ====================================================
 
-    async def analyze(self, context: Dict, tools: Optional[List[Any]] = None) -> Dict:
+    async def analyze(self, context: dict, tools: Optional[list[Any]] = None) -> dict:
         """
         Run agent analysis using Gemini model, potentially using tools.
-        
+
         Args:
             context: Dictionary containing the context for analysis
             tools: Optional list of tools the model can use.
                    Provide as `google.genai.types.Tool` instances or as dictionaries
                    adhering to the Gemini function declaration schema.
-            
+
         Returns:
             Dictionary containing the agent's findings, potential function calls, or error information
         """
         try:
             if not self.client:
                 raise ValueError("Gemini client not initialized. Please provide an API key.")
-                
+
             # Check if the context already contains a formatted prompt
             if "formatted_prompt" in context:
                 prompt = context["formatted_prompt"]
             else:
                 # Format the prompt using the template
                 prompt = self.format_prompt(context)
-            
+
             # Configure model parameters based on model and reasoning mode
             model_name = self.model_name
-            
+
             # Thinking is controlled via thinking_config in GenerateContentConfig
-            
+
             # Build GenerateContentConfig per new SDK
-            config_kwargs: Dict[str, Any] = {}
+            config_kwargs: dict[str, Any] = {}
             # System instruction as a string
             if self.role:
-                config_kwargs["system_instruction"] = f"You are {self.name or 'an AI assistant'}, responsible for {self.role}."
+                config_kwargs["system_instruction"] = (
+                    f"You are {self.name or 'an AI assistant'}, responsible for {self.role}."
+                )
             # Tools
             api_tools = None
             if tools or (self.tools_config and self.tools_config.get("enabled", False)):
@@ -202,12 +206,19 @@ class GeminiArchitect(BaseArchitect):
             # Get the model configuration name
             from core.utils.model_config_helper import get_model_config_name
             model_config_name = get_model_config_name(self)
-            
+
             agent_name = self.name or "Gemini Architect"
-            logger.info(f"[bold magenta]{agent_name}:[/bold magenta] Sending request to {model_name} (Config: {model_config_name})" + 
-                       (" with thinking" if self.reasoning == ReasoningMode.ENABLED else "") +
-                       (" with tools enabled" if api_tools else ""))
-            
+            details: list[str] = []
+            if self.reasoning == ReasoningMode.ENABLED:
+                details.append("with thinking")
+            if api_tools:
+                details.append("with tools enabled")
+            detail_suffix = f" ({', '.join(details)})" if details else ""
+            logger.info(
+                f"[bold magenta]{agent_name}:[/bold magenta] Sending request to {model_name} "
+                f"(Config: {model_config_name}){detail_suffix}"
+            )
+
             # Send a request to the Gemini API to analyze the given context.
             if not self.client:
                 raise ValueError("Gemini client not initialized. Please provide a valid API key or set GEMINI_API_KEY.")
@@ -217,9 +228,9 @@ class GeminiArchitect(BaseArchitect):
                 contents=prompt,
                 config=generation_config,
             )
-            
+
             logger.info(f"[bold green]{agent_name}:[/bold green] Received response from {model_name}")
-            
+
             # Process the response
             results = {
                 "agent": agent_name,
@@ -245,7 +256,7 @@ class GeminiArchitect(BaseArchitect):
             for part in response.candidates[0].content.parts:
                 if getattr(part, 'function_call', None):
                     fc = part.function_call
-                    args_dict: Dict[str, Any] = {}
+                    args_dict: dict[str, Any] = {}
                     # New SDK may present args as dict; handle Struct as fallback
                     if hasattr(fc, 'args'):
                         if isinstance(fc.args, dict):
@@ -258,7 +269,7 @@ class GeminiArchitect(BaseArchitect):
                         "name": getattr(fc, 'name', None),
                         "args": args_dict,
                     })
-            
+
             if function_calls:
                  logger.info(f"[bold magenta]{agent_name}:[/bold magenta] Model requested function call(s).")
                  results["function_calls"] = function_calls
@@ -267,7 +278,7 @@ class GeminiArchitect(BaseArchitect):
                       results["findings"] = None
 
             return results
-            
+
         except Exception as e:
             agent_name = self.name or "Gemini Architect"
             logger.error(f"[bold red]Error in {agent_name}:[/bold red] {str(e)}")
@@ -276,110 +287,119 @@ class GeminiArchitect(BaseArchitect):
                 "agent": agent_name,
                 "error": str(e)
             }
-    
+
     # ====================================================
     # Create Analysis Plan - Not primary function but implemented for compatibility
     # ====================================================
-    async def create_analysis_plan(self, phase1_results: Dict, prompt: Optional[str] = None) -> Dict:
+    async def create_analysis_plan(self, phase1_results: dict, prompt: Optional[str] = None) -> dict:
         """
         Create an analysis plan based on Phase 1 results.
         (Does not currently support tool usage for this specific task)
-        
+
         This is implemented for compatibility with the base class but not the
         primary function of the Gemini model in the current architecture.
-        
+
         Args:
             phase1_results: Dictionary containing the results from Phase 1
             prompt: Optional custom prompt to use
-            
+
         Returns:
             Dictionary containing the analysis plan
         """
-        context = {"phase1_results": phase1_results, "formatted_prompt": prompt} if prompt else {"phase1_results": phase1_results}
+        context = {"phase1_results": phase1_results}
+        if prompt:
+            context["formatted_prompt"] = prompt
         # Call analyze without tools
-        result = await self.analyze(context) 
-        
+        result = await self.analyze(context)
+
         return {
             "plan": result.get("findings", "No plan generated"),
             "error": result.get("error", None)
         }
-    
+
     # ====================================================
     # Synthesize Findings - Not primary function but implemented for compatibility
     # ====================================================
-    async def synthesize_findings(self, phase3_results: Dict, prompt: Optional[str] = None) -> Dict:
+    async def synthesize_findings(self, phase3_results: dict, prompt: Optional[str] = None) -> dict:
         """
         Synthesize findings from Phase 3.
         (Does not currently support tool usage for this specific task)
 
         This is implemented for compatibility with the base class but not the
         primary function of the Gemini model in the current architecture.
-        
+
         Args:
             phase3_results: Dictionary containing the results from Phase 3
             prompt: Optional custom prompt to use
-            
+
         Returns:
             Dictionary containing the synthesis
         """
-        context = {"phase3_results": phase3_results, "formatted_prompt": prompt} if prompt else {"phase3_results": phase3_results}
+        context = {"phase3_results": phase3_results}
+        if prompt:
+            context["formatted_prompt"] = prompt
         # Call analyze without tools
-        result = await self.analyze(context) 
-        
+        result = await self.analyze(context)
+
         return {
             "analysis": result.get("findings", "No synthesis generated"),
             "error": result.get("error", None)
         }
-    
+
     # ====================================================
     # Final Analysis - Not primary function but implemented for compatibility
     # ====================================================
-    async def final_analysis(self, consolidated_report: Dict, prompt: Optional[str] = None) -> Dict:
+    async def final_analysis(self, consolidated_report: dict, prompt: Optional[str] = None) -> dict:
         """
         Perform final analysis on the consolidated report.
         (Does not currently support tool usage for this specific task)
 
         This is implemented for compatibility with the base class but not the
         primary function of the Gemini model in the current architecture.
-        
+
         Args:
             consolidated_report: Dictionary containing the consolidated report
             prompt: Optional custom prompt to use
-            
+
         Returns:
             Dictionary containing the final analysis
         """
-        context = {"consolidated_report": consolidated_report, "formatted_prompt": prompt} if prompt else {"consolidated_report": consolidated_report}
+        context = {"consolidated_report": consolidated_report}
+        if prompt:
+            context["formatted_prompt"] = prompt
         # Call analyze without tools
-        result = await self.analyze(context) 
-        
+        result = await self.analyze(context)
+
         return {
             "analysis": result.get("findings", "No final analysis generated"),
             "error": result.get("error", None)
         }
-    
+
     # ====================================================
     # Consolidate Results - Primary method for Phase 5
     # ====================================================
-    async def consolidate_results(self, all_results: Dict, prompt: Optional[str] = None) -> Dict:
+    async def consolidate_results(self, all_results: dict, prompt: Optional[str] = None) -> dict:
         """
         Consolidate results from all previous phases.
         (Does not currently support tool usage for this specific task)
-        
+
         Args:
             all_results: Dictionary containing all phase results
             prompt: Optional custom prompt to use
-            
+
         Returns:
             Dictionary containing the consolidated report
         """
         try:
             # Use the provided prompt or format a default one
-            content = prompt if prompt else f"Consolidate these results into a comprehensive report:\n\n{json.dumps(all_results, indent=2)}"
-            
+            content = prompt or (
+                "Consolidate these results into a comprehensive report:\n\n"
+                f"{json.dumps(all_results, indent=2)}"
+            )
+
             # Configure model parameters
             model_name = self.model_name
-            
+
             # Check if we should use a thinking model
             if self.reasoning == ReasoningMode.ENABLED:
                  # Use the thinking variant of the selected model
@@ -387,14 +407,14 @@ class GeminiArchitect(BaseArchitect):
                     model_name = "gemini-2.0-flash-thinking-exp"
                 elif "gemini-2.5-pro" in model_name:
                     model_name = "gemini-2.5-pro-exp-03-25"
-            
+
             # Use the same models.generate_content path as in analyze()
             response = await asyncio.to_thread(
                 self.client.models.generate_content,
                 model=model_name,
                 contents=content,
             )
-            
+
             # Return the consolidated report
             return {"phase": "Consolidation", "report": response.text}
         except Exception as e:
@@ -405,25 +425,32 @@ class GeminiArchitect(BaseArchitect):
             }
 
 # ====================================================
-# Legacy GeminiAgent Class 
+# Legacy GeminiAgent Class
 # Maintained for backward compatibility
 # ====================================================
 
 class GeminiAgent:
     """
     Agent class for interacting with Google's Gemini models.
-    
+
     This class provides a structured way to create specialized agents that use
     Gemini models for different analysis tasks.
-    
+
     Note: This class is maintained for backward compatibility. New code should use
     GeminiArchitect instead.
     """
-    
-    def __init__(self, name: str, role: str, responsibilities: List[str], prompt_template: str = None, api_key: str = None):
+
+    def __init__(
+        self,
+        name: str,
+        role: str,
+        responsibilities: list[str],
+        prompt_template: str | None = None,
+        api_key: str | None = None,
+    ):
         """
         Initialize a Gemini agent with a specific name, role, and responsibilities.
-        
+
         Args:
             name: The name of the agent (e.g., "Structure Agent")
             role: The role of the agent (e.g., "analyzing directory and file organization")
@@ -434,10 +461,10 @@ class GeminiAgent:
         self.name = name
         self.role = role
         self.responsibilities = responsibilities
-        
+
         # Store the provided prompt template first
         self._provided_prompt_template = prompt_template
-        
+
         self._architect = GeminiArchitect(
             name=name,
             role=role,
@@ -446,35 +473,35 @@ class GeminiAgent:
             api_key=api_key,
             tools_config=None # Legacy agent does not support tools
         )
-        
+
         # Now initialize the prompt_template properly
         self.prompt_template = prompt_template or self._get_default_prompt_template()
-    
+
     def _get_default_prompt_template(self) -> str:
         """Get the default prompt template for the agent."""
         # Always delegate to the architect to get the default template
         return self._architect._get_default_prompt_template()
-    
-    def format_prompt(self, context: Dict[str, Any]) -> str:
+
+    def format_prompt(self, context: dict[str, Any]) -> str:
         """
         Format the prompt template with the agent's information and context.
-        
+
         Args:
             context: Dictionary containing the context for analysis
-            
+
         Returns:
             Formatted prompt string
         """
         return self._architect.format_prompt(context)
 
     # Note: Legacy analyze method doesn't pass 'tools'
-    async def analyze(self, context: Dict) -> Dict:
+    async def analyze(self, context: dict) -> dict:
         """
         Run agent analysis using Gemini model.
-        
+
         Args:
             context: Dictionary containing the context for analysis
-            
+
         Returns:
             Dictionary containing the agent's findings or error information
         """

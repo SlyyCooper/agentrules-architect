@@ -40,6 +40,8 @@ dev = [
   "pytest",
   "pytest-asyncio",
   "pytest-mock",
+  "ruff>=0.6",
+  "pyright>=1.1.380",
 ]
 
 [project.scripts]
@@ -48,3 +50,43 @@ agentrules = "agentrules.cli:app"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["agentrules*", "core*", "config*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle errors
+  "F",  # pyflakes
+  "W",  # pycodestyle warnings
+  "B",  # flake8-bugbear
+  "UP", # pyupgrade
+  "I",  # isort
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.per-file-ignores]
+"config/prompts/__init__.py" = ["F403"]
+"config/prompts/*.py" = ["E501"]
+"tests/**" = ["E402", "E501"]
+"tests/unit/agents/test_gemini_agent_parsing.py" = ["E702"]
+
+[tool.pyright]
+include = ["agentrules", "core", "config", "main.py", "tests"]
+exclude = [
+  "build",
+  "dist",
+  ".venv",
+  ".venv_agentrules",
+  ".mypy_cache",
+  ".pytest_cache",
+]
+pythonVersion = "3.9"
+typeCheckingMode = "standard"
+reportMissingImports = "error"
+reportMissingTypeStubs = "warning"
+disableBytesTypePromotions = true

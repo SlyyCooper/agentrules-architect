@@ -1,5 +1,6 @@
 import unittest
 from pathlib import Path
+
 from core.utils.file_system.tree_generator import get_project_tree
 from tests.utils.offline_stubs import patch_factory_offline
 

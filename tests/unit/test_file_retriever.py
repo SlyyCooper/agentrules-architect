@@ -1,14 +1,11 @@
-import os
 from pathlib import Path
 
-import pytest
-
 from core.utils.file_system.file_retriever import (
-    should_exclude,
-    read_file_with_fallback,
-    list_files,
     get_file_contents,
     get_filtered_formatted_contents,
+    list_files,
+    read_file_with_fallback,
+    should_exclude,
 )
 
 

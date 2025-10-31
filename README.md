@@ -153,6 +153,32 @@ agentrules --version
 
 On macOS you may see the `LibreSSL` warning the first time you run this command with older builds of the package; the current release suppresses it automatically. Feel free to adapt this snippet for CI to catch packaging regressions early.
 
+### 🧹 Linting & Type Checking
+
+Install the development extras to ensure Ruff and Pyright are available:
+
+```bash
+pip install -e .[dev]
+```
+
+Run the linters before sending a pull request:
+
+```bash
+ruff check .
+```
+
+Format fixes automatically when needed:
+
+```bash
+ruff format .
+```
+
+Validate static typing with Pyright:
+
+```bash
+pyright
+```
+
 ### Advanced Options
 
 ```bash

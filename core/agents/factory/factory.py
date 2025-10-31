@@ -5,10 +5,13 @@ This module provides factory functions for creating architect instances based on
 It centralizes the instantiation logic for different types of agents.
 """
 
-from typing import List, Optional
-from ..base import BaseArchitect, ModelProvider
-from core.types.models import ModelConfig, create_researcher_config
+from typing import Optional
+
 from config.agents import MODEL_CONFIG
+from core.types.models import ModelConfig, create_researcher_config
+
+from ..base import BaseArchitect, ModelProvider
+
 
 class ArchitectFactory:
     """
@@ -19,14 +22,14 @@ class ArchitectFactory:
         model_config: ModelConfig,
         name: str,
         role: str,
-        responsibilities: List[str],
+        responsibilities: list[str],
         prompt_template: str
     ) -> BaseArchitect:
         """
         Create an architect instance based on the provided model configuration.
         """
         provider = model_config.provider
-        
+
         common_args = {
             "model_name": model_config.model_name,
             "reasoning": model_config.reasoning,
@@ -39,16 +42,16 @@ class ArchitectFactory:
 
         # Lazy import provider classes to avoid importing SDKs at module import time
         if provider == ModelProvider.ANTHROPIC:
-            from ..anthropic import AnthropicArchitect  # noqa: WPS433
+            from ..anthropic import AnthropicArchitect  # noqa: E402
             return AnthropicArchitect(**common_args)
         elif provider == ModelProvider.OPENAI:
-            from ..openai import OpenAIArchitect  # noqa: WPS433
+            from ..openai import OpenAIArchitect  # noqa: E402
             return OpenAIArchitect(temperature=model_config.temperature, **common_args)
         elif provider == ModelProvider.DEEPSEEK:
-            from ..deepseek import DeepSeekArchitect  # noqa: WPS433
+            from ..deepseek import DeepSeekArchitect  # noqa: E402
             return DeepSeekArchitect(**common_args)
         elif provider == ModelProvider.GEMINI:
-            from ..gemini import GeminiArchitect  # noqa: WPS433
+            from ..gemini import GeminiArchitect  # noqa: E402
             return GeminiArchitect(**common_args)
         else:
             raise ValueError(f"Unknown model provider: {provider}")
@@ -57,7 +60,7 @@ def get_architect_for_phase(
     phase: str,
     name: Optional[str] = None,
     role: Optional[str] = None,
-    responsibilities: Optional[List[str]] = None,
+    responsibilities: Optional[list[str]] = None,
     prompt_template: Optional[str] = None
 ) -> BaseArchitect:
     """
@@ -94,7 +97,7 @@ def get_architect_for_phase(
 def get_researcher_architect(
     name: str,
     role: str,
-    responsibilities: List[str],
+    responsibilities: list[str],
     prompt_template: str
 ) -> BaseArchitect:
     """

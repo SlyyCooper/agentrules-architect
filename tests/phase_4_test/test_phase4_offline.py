@@ -1,4 +1,5 @@
 import unittest
+
 from tests.utils.offline_stubs import patch_factory_offline
 
 

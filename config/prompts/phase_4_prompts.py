@@ -7,7 +7,6 @@ modifying the core logic of the agents.
 """
 
 import json
-from typing import Dict
 
 # Prompt template for Phase 4 (Synthesis)
 PHASE_4_PROMPT = """Review and synthesize these agent findings:
@@ -22,13 +21,13 @@ Provide:
 4. Refined instructions for agents
 5. Areas needing deeper investigation"""
 
-def format_phase4_prompt(phase3_results: Dict) -> str:
+def format_phase4_prompt(phase3_results: dict) -> str:
     """
     Format the Phase 4 prompt with the Phase 3 results.
-    
+
     Args:
         phase3_results: Dictionary containing the results from Phase 3
-        
+
     Returns:
         Formatted prompt string
     """

@@ -67,7 +67,7 @@ async def test_deepseek_reasoner_includes_reasoning(monkeypatch):
     arch.client = Client()
     res = await arch.analyze({"formatted_prompt": "x"})
     assert res["reasoning"] == "think"
-    assert res["findings"] is None or res["findings"] == None or res["findings"] == ""
+    assert res["findings"] is None or res["findings"] is None or res["findings"] == ""
 
 
 @pytest.mark.asyncio

@@ -1,12 +1,11 @@
-import json
 from pathlib import Path
 
 import pytest
 
+from core.analysis.final_analysis import FinalAnalysis
 from core.analysis.phase_2 import Phase2Analysis
 from core.analysis.phase_3 import Phase3Analysis
 from core.analysis.phase_5 import Phase5Analysis
-from core.analysis.final_analysis import FinalAnalysis
 from tests.utils.offline_stubs import patch_factory_offline
 
 

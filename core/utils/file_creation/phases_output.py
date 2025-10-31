@@ -15,10 +15,9 @@ This module is used by the main analysis process to save results in a structured
 # ====================================================
 
 import json  # Used for working with JSON data
-from pathlib import Path  # Used for interacting with file paths in a more object-oriented way
-from typing import Dict, Any  # Used for type hinting, which makes the code easier to understand
 import os  # Used for creating directories
-
+from pathlib import Path  # Used for interacting with file paths in a more object-oriented way
+from typing import Any  # Used for type hinting, which makes the code easier to understand
 
 # ====================================================
 # Function to Save Phase Outputs
@@ -28,7 +27,7 @@ import os  # Used for creating directories
 def save_phase_outputs(directory: Path, analysis_data: dict) -> None:
     """
     Save the outputs of each phase to separate markdown files.
-    
+
     Args:
         directory: Path to the project directory
         analysis_data: Dictionary containing the results from all phases
@@ -36,7 +35,7 @@ def save_phase_outputs(directory: Path, analysis_data: dict) -> None:
     # Import the MODEL_CONFIG to get model information for each phase
     from config.agents import MODEL_CONFIG
     from core.utils.model_config_helper import get_model_config_name
-    
+
     # Get model configuration names
     phase1_model = get_model_config_name(MODEL_CONFIG['phase1'])
     phase2_model = get_model_config_name(MODEL_CONFIG['phase2'])
@@ -44,19 +43,19 @@ def save_phase_outputs(directory: Path, analysis_data: dict) -> None:
     phase4_model = get_model_config_name(MODEL_CONFIG['phase4'])
     phase5_model = get_model_config_name(MODEL_CONFIG['phase5'])
     final_model = get_model_config_name(MODEL_CONFIG['final'])
-    
+
     # Create the phases_output directory if it doesn't exist
     output_dir = directory / "phases_output"
     os.makedirs(output_dir, exist_ok=True)
-    
+
     # Helper function to ensure values are strings
     def ensure_string(value: Any) -> str:
         """
         Ensure that the value is a string.
-        
+
         Args:
             value: The value to convert to a string
-            
+
         Returns:
             String representation of the value
         """
@@ -102,36 +101,40 @@ def save_phase_outputs(directory: Path, analysis_data: dict) -> None:
 
     # Final Analysis - Save to both markdown file and .cursorrules file
     final_analysis_data = analysis_data["final_analysis"].get("analysis", "Error in final analysis phase")
-    
+
     # Save to markdown file in phases_output directory
     with open(output_dir / "final_analysis.md", "w", encoding="utf-8") as f:
         f.write(f"# Final Analysis (Config: {final_model})\n\n")
         f.write(ensure_string(final_analysis_data))  # Ensure we're writing a string
-    
+
     # Save to .cursorrules file in project root directory with project tree
     # Define directories to exclude from the tree
     exclude_dirs = ["phases_output", "__pycache__", ".git", ".vscode", ".cursor"]
-    
+
     # Get the project tree without the excluded directories
-    from core.utils.file_system.tree_generator import generate_tree, DEFAULT_EXCLUDE_DIRS, DEFAULT_EXCLUDE_PATTERNS
-    
+    from core.utils.file_system.tree_generator import (
+        DEFAULT_EXCLUDE_DIRS,
+        DEFAULT_EXCLUDE_PATTERNS,
+        generate_tree,
+    )
+
     # Create a custom set of exclude directories by combining defaults with our additions
     custom_exclude_dirs = DEFAULT_EXCLUDE_DIRS.union(set(exclude_dirs))
-    
+
     # Generate a tree with our custom exclusions
     tree = generate_tree(
         directory,
         exclude_dirs=custom_exclude_dirs,
         exclude_patterns=DEFAULT_EXCLUDE_PATTERNS
     )
-    
+
     # Add delimiters and format for inclusion in the .cursorrules file
     tree_section = [
         "\n<project_structure>",
     ]
     tree_section.extend(tree)
     tree_section.append("</project_structure>")
-    
+
     # Write final analysis and tree to .cursorrules file
     with open(directory / ".cursorrules", "w", encoding="utf-8") as f:
         f.write(ensure_string(final_analysis_data))  # Save the final analysis
@@ -151,7 +154,7 @@ def save_phase_outputs(directory: Path, analysis_data: dict) -> None:
         f.write("=" * 50 + "\n\n")
         f.write("## Analysis Metrics\n\n")
         f.write(f"- Time taken: {analysis_data['metrics']['time']:.2f} seconds\n")  # Write the total time
-        
+
         f.write("\n## Model Configurations Used\n\n")
         f.write(f"- Phase 1: Initial Discovery - {phase1_model}\n")
         f.write(f"- Phase 2: Methodical Planning - {phase2_model}\n")
@@ -159,7 +162,7 @@ def save_phase_outputs(directory: Path, analysis_data: dict) -> None:
         f.write(f"- Phase 4: Synthesis - {phase4_model}\n")
         f.write(f"- Phase 5: Consolidation - {phase5_model}\n")
         f.write(f"- Final Analysis - {final_model}\n")
-        
+
         f.write("\n## Generated Files\n\n")
         f.write("- `.cursorrules` - Contains the final analysis for Cursor IDE\n")
         f.write("- `.cursorignore` - Contains patterns of files to ignore in Cursor IDE\n")

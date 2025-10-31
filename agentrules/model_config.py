@@ -6,19 +6,16 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional
-
-from config import agents as agent_settings
-from core.agents.base import ModelProvider
 
 from agentrules.config_service import (
     PROVIDER_ENV_MAP,
     get_current_provider_keys,
     get_model_overrides,
 )
+from config import agents as agent_settings
+from core.agents.base import ModelProvider
 
-
-PHASE_TITLES: Dict[str, str] = {
+PHASE_TITLES: dict[str, str] = {
     "phase1": "Phase 1 – Initial Discovery",
     "phase2": "Phase 2 – Methodical Planning",
     "phase3": "Phase 3 – Deep Analysis",
@@ -28,7 +25,7 @@ PHASE_TITLES: Dict[str, str] = {
     "researcher": "Researcher Agent",
 }
 
-PHASE_SEQUENCE: List[str] = list(agent_settings.MODEL_PRESET_DEFAULTS.keys())
+PHASE_SEQUENCE: list[str] = list(agent_settings.MODEL_PRESET_DEFAULTS.keys())
 
 
 @dataclass(frozen=True)
@@ -47,7 +44,7 @@ class PresetInfo:
         return _provider_display_name(self.provider)
 
 
-PRESET_INFOS: Dict[str, PresetInfo] = {
+PRESET_INFOS: dict[str, PresetInfo] = {
     key: PresetInfo(
         key=key,
         label=meta["label"],
@@ -62,21 +59,21 @@ def get_phase_title(phase: str) -> str:
     return PHASE_TITLES.get(phase, phase.title())
 
 
-def get_default_preset_key(phase: str) -> Optional[str]:
+def get_default_preset_key(phase: str) -> str | None:
     return agent_settings.MODEL_PRESET_DEFAULTS.get(phase)
 
 
-def get_preset_info(key: str) -> Optional[PresetInfo]:
+def get_preset_info(key: str) -> PresetInfo | None:
     return PRESET_INFOS.get(key)
 
 
 def get_available_presets_for_phase(
     phase: str,
-    provider_keys: Optional[Dict[str, Optional[str]]] = None,
-) -> List[PresetInfo]:
+    provider_keys: dict[str, str | None] | None = None,
+) -> list[PresetInfo]:
     provider_keys = provider_keys or get_current_provider_keys()
     default_key = get_default_preset_key(phase)
-    available: List[PresetInfo] = []
+    available: list[PresetInfo] = []
 
     for key, info in PRESET_INFOS.items():
         if key != default_key and not _provider_available(info.provider_slug, provider_keys):
@@ -92,21 +89,21 @@ def get_available_presets_for_phase(
     return available
 
 
-def get_active_presets(overrides: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+def get_active_presets(overrides: dict[str, str] | None = None) -> dict[str, str]:
     overrides = overrides or get_model_overrides()
-    active: Dict[str, str] = {}
+    active: dict[str, str] = {}
     for phase in PHASE_SEQUENCE:
         active[phase] = overrides.get(phase, get_default_preset_key(phase))
     return active
 
 
-def apply_user_overrides(overrides: Optional[Dict[str, str]] = None) -> Dict[str, str]:
+def apply_user_overrides(overrides: dict[str, str] | None = None) -> dict[str, str]:
     """
     Apply user-selected model presets to the global MODEL_CONFIG.
     Returns the applied preset mapping for further inspection.
     """
     overrides = overrides or get_model_overrides()
-    applied: Dict[str, str] = {}
+    applied: dict[str, str] = {}
 
     # reset to defaults first
     for phase, preset_key in agent_settings.MODEL_PRESET_DEFAULTS.items():
@@ -127,7 +124,7 @@ def apply_user_overrides(overrides: Optional[Dict[str, str]] = None) -> Dict[str
     return applied
 
 
-def _provider_available(provider_slug: str, provider_keys: Dict[str, Optional[str]]) -> bool:
+def _provider_available(provider_slug: str, provider_keys: dict[str, str | None]) -> bool:
     # first check persisted keys
     if provider_keys.get(provider_slug):
         return True

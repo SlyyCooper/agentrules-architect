@@ -10,12 +10,10 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, Optional
 
 import tomli
 import tomli_w
 from platformdirs import user_config_dir
-
 
 CONFIG_DIR = Path(os.getenv("AGENTRULES_CONFIG_DIR", user_config_dir("agentrules", "cursorrules")))
 CONFIG_FILE = CONFIG_DIR / "config.toml"
@@ -31,16 +29,16 @@ PROVIDER_ENV_MAP = {
 
 @dataclass
 class ProviderConfig:
-    api_key: Optional[str] = None
+    api_key: str | None = None
 
 
 @dataclass
 class CLIConfig:
-    providers: Dict[str, ProviderConfig] = field(default_factory=dict)
-    models: Dict[str, str] = field(default_factory=dict)
+    providers: dict[str, ProviderConfig] = field(default_factory=dict)
+    models: dict[str, str] = field(default_factory=dict)
 
     @classmethod
-    def from_dict(cls, payload: Dict) -> "CLIConfig":
+    def from_dict(cls, payload: dict) -> CLIConfig:
         providers = {
             provider: ProviderConfig(**values) if isinstance(values, dict) else ProviderConfig(api_key=values)
             for provider, values in payload.get("providers", {}).items()
@@ -52,8 +50,8 @@ class CLIConfig:
         }
         return cls(providers=providers, models=models)
 
-    def to_dict(self) -> Dict:
-        payload: Dict[str, object] = {
+    def to_dict(self) -> dict:
+        payload: dict[str, object] = {
             "providers": {
                 name: {"api_key": cfg.api_key}
                 for name, cfg in self.providers.items()
@@ -80,7 +78,7 @@ def save_config(config: CLIConfig) -> None:
         tomli_w.dump(config.to_dict(), fh)
 
 
-def set_provider_key(provider: str, api_key: Optional[str]) -> CLIConfig:
+def set_provider_key(provider: str, api_key: str | None) -> CLIConfig:
     config = load_config()
     config.providers[provider] = ProviderConfig(api_key=api_key)
     save_config(config)
@@ -88,7 +86,7 @@ def set_provider_key(provider: str, api_key: Optional[str]) -> CLIConfig:
     return config
 
 
-def set_phase_model(phase: str, preset_key: Optional[str]) -> CLIConfig:
+def set_phase_model(phase: str, preset_key: str | None) -> CLIConfig:
     config = load_config()
     if preset_key and preset_key.strip():
         config.models[phase] = preset_key.strip()
@@ -98,7 +96,7 @@ def set_phase_model(phase: str, preset_key: Optional[str]) -> CLIConfig:
     return config
 
 
-def apply_config_to_environment(config: Optional[CLIConfig] = None) -> None:
+def apply_config_to_environment(config: CLIConfig | None = None) -> None:
     config = config or load_config()
     for provider, cfg in config.providers.items():
         env_var = PROVIDER_ENV_MAP.get(provider)
@@ -108,15 +106,15 @@ def apply_config_to_environment(config: Optional[CLIConfig] = None) -> None:
             os.environ[env_var] = cfg.api_key
 
 
-def get_current_provider_keys() -> Dict[str, Optional[str]]:
+def get_current_provider_keys() -> dict[str, str | None]:
     config = load_config()
-    keys: Dict[str, Optional[str]] = {}
+    keys: dict[str, str | None] = {}
     for provider in PROVIDER_ENV_MAP.keys():
         cfg = config.providers.get(provider, ProviderConfig())
         keys[provider] = cfg.api_key
     return keys
 
 
-def get_model_overrides() -> Dict[str, str]:
+def get_model_overrides() -> dict[str, str]:
     config = load_config()
     return dict(config.models)
