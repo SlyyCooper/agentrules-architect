@@ -24,6 +24,7 @@ PROVIDER_ENV_MAP = {
     "openai": "OPENAI_API_KEY",
     "deepseek": "DEEPSEEK_API_KEY",
     "gemini": "GEMINI_API_KEY",
+    "xai": "XAI_API_KEY",
     "tavily": "TAVILY_API_KEY",
 }
 

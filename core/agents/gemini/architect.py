@@ -5,15 +5,22 @@ from __future__ import annotations
 import json
 import logging
 import os
-from typing import Any
+from collections.abc import AsyncIterator, Iterator
+from typing import Any, Optional
 
 from google.genai import types as genai_types
 
 from core.agents.base import BaseArchitect, ModelProvider, ReasoningMode
+from core.streaming import StreamChunk, StreamEventType
+from core.utils.async_stream import iterate_in_thread
 
 from .client import build_gemini_client, generate_content_async
 from .prompting import default_prompt_template, format_prompt
-from .response_parser import parse_generate_response
+from .response_parser import (
+    _collect_candidate_parts,
+    _extract_function_call_args,
+    parse_generate_response,
+)
 from .tooling import resolve_tool_config
 
 logger = logging.getLogger("project_extractor")
@@ -61,6 +68,10 @@ class GeminiArchitect(BaseArchitect):
                 "Gemini client not initialized. Provide GEMINI_API_KEY, GOOGLE_API_KEY, "
                 "GOOGLE_APPLICATION_CREDENTIALS, or pass api_key directly to GeminiArchitect."
             )
+
+    @property
+    def supports_streaming(self) -> bool:
+        return self.client is not None
 
     # Public API -----------------------------------------------------------------
     def format_prompt(self, context: dict[str, Any]) -> str:
@@ -196,6 +207,67 @@ class GeminiArchitect(BaseArchitect):
             "report": parsed.findings or "No report generated",
         }
 
+    def stream_analyze(
+        self,
+        context: dict[str, Any],
+        tools: list[Any] | None = None,
+    ) -> AsyncIterator[StreamChunk]:
+        async def _generator() -> AsyncIterator[StreamChunk]:
+            client = self.client
+            if client is None:
+                raise RuntimeError(self._client_error_hint or "Gemini streaming unavailable.")
+
+            prompt = context.get("formatted_prompt") or self.format_prompt(context)
+
+            config_kwargs: dict[str, Any] = {}
+            if self.role:
+                config_kwargs["system_instruction"] = (
+                    f"You are {self.name or 'an AI assistant'}, responsible for {self.role}."
+                )
+
+            api_tools = resolve_tool_config(tools, self.tools_config)
+            if api_tools:
+                config_kwargs["tools"] = api_tools
+
+            thinking_config = self._build_thinking_config()
+            if thinking_config is not None:
+                config_kwargs["thinking_config"] = thinking_config
+
+            generation_config = genai_types.GenerateContentConfig(**config_kwargs) if config_kwargs else None
+
+            agent_name = self.name or "Gemini Architect"
+            details: list[str] = []
+            if thinking_config is not None:
+                budget = thinking_config.thinking_budget
+                if budget == DISABLED_THINKING_BUDGET:
+                    details.append("with thinking disabled")
+                elif budget == DYNAMIC_THINKING_BUDGET:
+                    details.append("with dynamic thinking")
+                else:
+                    details.append(f"with thinking (budget={budget})")
+            if api_tools:
+                details.append("with tools enabled")
+            detail_suffix = f" ({', '.join(details)})" if details else ""
+
+            from core.utils.model_config_helper import get_model_config_name  # Local import to avoid cycle
+
+            model_config_name = get_model_config_name(self)
+            logger.info(
+                f"[bold magenta]{agent_name}:[/bold magenta] Streaming request to {self.model_name} "
+                f"(Config: {model_config_name}){detail_suffix}"
+            )
+
+            try:
+                async for chunk in iterate_in_thread(
+                    lambda: self._stream_content(client, prompt, generation_config)
+                ):
+                    yield chunk
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.error(f"[bold red]Streaming error in {agent_name}:[/bold red] {str(exc)}")
+                raise
+
+        return _generator()
+
     # Internal helpers -----------------------------------------------------------
     def _resolve_consolidation_model(self) -> str:
         if self.reasoning == ReasoningMode.DISABLED:
@@ -237,3 +309,80 @@ class GeminiArchitect(BaseArchitect):
         if "gemini-2.5-pro" in normalized:
             return "gemini-2.5-pro"
         return self.model_name
+
+    def _stream_content(
+        self,
+        client: Any,
+        prompt: str,
+        config: Optional[genai_types.GenerateContentConfig],
+    ) -> Iterator[StreamChunk]:
+        stream = client.models.generate_content_stream(
+            model=self.model_name,
+            contents=prompt,
+            config=config,
+        )
+
+        for chunk in stream:
+            for part in _collect_candidate_parts(chunk):
+                part_text = getattr(part, "text", None)
+                if part_text:
+                    yield StreamChunk(StreamEventType.TEXT_DELTA, str(part_text), None, None, None, None, chunk)
+
+                function_call = getattr(part, "function_call", None)
+                if function_call:
+                    call_payload = {
+                        "name": getattr(function_call, "name", None),
+                        "args": _extract_function_call_args(function_call),
+                    }
+                    yield StreamChunk(
+                        StreamEventType.TOOL_CALL_DELTA,
+                        None,
+                        None,
+                        call_payload,
+                        None,
+                        None,
+                        chunk,
+                    )
+
+        final_response = getattr(stream, "response", None)
+        if final_response:
+            usage = getattr(final_response, "usage_metadata", None)
+            finish_reason = None
+            candidates = getattr(final_response, "candidates", []) or []
+            if candidates:
+                finish_reason = getattr(candidates[0], "finish_reason", None)
+
+            yield StreamChunk(
+                StreamEventType.MESSAGE_END,
+                None,
+                None,
+                None,
+                finish_reason,
+                self._to_dict(usage),
+                final_response,
+            )
+
+    @staticmethod
+    def _to_dict(value: Any) -> dict[str, Any] | None:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        if hasattr(value, "model_dump"):
+            try:
+                dumped = value.model_dump()  # type: ignore[call-arg]
+                if isinstance(dumped, dict):
+                    return dumped
+            except TypeError:
+                pass
+        if hasattr(value, "to_dict"):
+            result = value.to_dict()
+            if isinstance(result, dict):
+                return result
+        if hasattr(value, "__dict__"):
+            return {
+                key: val
+                for key, val in value.__dict__.items()
+                if not key.startswith("_")
+            }
+        return None

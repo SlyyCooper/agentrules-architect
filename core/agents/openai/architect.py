@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
 from config.prompts.final_analysis_prompt import format_final_analysis_prompt
 from config.prompts.phase_2_prompts import format_phase2_prompt
 from config.prompts.phase_4_prompts import format_phase4_prompt
 from core.agents.base import BaseArchitect, ModelProvider, ReasoningMode
+from core.streaming import StreamChunk, StreamEventType
+from core.utils.async_stream import iterate_in_thread
 
-from .client import execute_request
+from .client import execute_request, get_client
 from .config import resolve_model_defaults
 from .request_builder import PreparedRequest, prepare_request
 from .response_parser import parse_response
@@ -64,6 +67,10 @@ class OpenAIArchitect(BaseArchitect):
         self.prompt_template = prompt_template or self._get_default_prompt_template()
         self.text_verbosity = text_verbosity
         self._use_responses_api = defaults.use_responses_api
+
+    @property
+    def supports_streaming(self) -> bool:
+        return True
 
     @staticmethod
     def _get_default_prompt_template() -> str:
@@ -155,6 +162,39 @@ Format your response as a structured report with clear sections and findings."""
                 "agent": agent_name,
                 "error": str(exc),
             }
+
+    def stream_analyze(
+        self,
+        context: dict[str, Any],
+        tools: list[Any] | None = None,
+    ) -> AsyncIterator[StreamChunk]:
+        """Stream analysis output incrementally from the OpenAI model."""
+
+        async def _generator() -> AsyncIterator[StreamChunk]:
+            content = context.get("formatted_prompt") or self.format_prompt(context)
+            final_tools = self._resolve_tools(tools)
+            prepared = self._prepare_request(content, final_tools)
+
+            from core.utils.model_config_helper import get_model_config_name
+
+            model_config_name = get_model_config_name(self)
+            agent_name = self.name or "OpenAI Architect"
+            detail_suffix = " with tools enabled" if final_tools else ""
+            api_label = "Responses API" if prepared.api == "responses" else "Chat Completions API"
+
+            logger.info(
+                f"[bold blue]{agent_name}:[/bold blue] Streaming request to {self.model_name} "
+                f"via {api_label} (Config: {model_config_name}){detail_suffix}"
+            )
+
+            try:
+                async for chunk in iterate_in_thread(lambda: self._stream_dispatch(prepared)):
+                    yield chunk
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.error(f"[bold red]Streaming error in {agent_name}:[/bold red] {str(exc)}")
+                raise
+
+        return _generator()
 
     async def create_analysis_plan(self, phase1_results: dict, prompt: str | None = None) -> dict:
         """Create an analysis plan based on Phase 1 results."""
@@ -250,6 +290,172 @@ Format your response as a structured report with clear sections and findings."""
             if include_phase:
                 response["phase"] = "Consolidation"
             return response
+
+    def _stream_dispatch(self, prepared: PreparedRequest) -> Iterator[StreamChunk]:
+        if prepared.api == "responses":
+            yield from self._stream_responses_api(prepared)
+        else:
+            yield from self._stream_chat_api(prepared)
+
+    def _stream_responses_api(self, prepared: PreparedRequest) -> Iterator[StreamChunk]:
+        client = get_client()
+        payload = dict(prepared.payload)
+
+        with client.responses.stream(**payload) as stream:  # type: ignore[arg-type]
+            for event in stream:
+                event_type = getattr(event, "type", "")
+                if event_type == "response.output_text.delta":
+                    text = getattr(event, "delta", None)
+                    if text:
+                        yield StreamChunk(StreamEventType.TEXT_DELTA, str(text), None, None, None, None, event)
+                    continue
+
+                if event_type == "response.tool_call.delta":
+                    delta = getattr(event, "delta", None)
+                    if delta:
+                        yield StreamChunk(
+                            StreamEventType.TOOL_CALL_DELTA,
+                            None,
+                            None,
+                            self._coerce_to_dict(delta),
+                            None,
+                            None,
+                            event,
+                        )
+                    continue
+
+                if event_type == "response.completed":
+                    response_obj = getattr(event, "response", None)
+                    usage = getattr(response_obj, "usage", None)
+                    finish_reason = getattr(response_obj, "finish_reason", None)
+                    yield StreamChunk(
+                        StreamEventType.MESSAGE_END,
+                        None,
+                        None,
+                        None,
+                        finish_reason,
+                        self._coerce_to_dict(usage),
+                        event,
+                    )
+                    continue
+
+                if event_type == "response.error":
+                    error = getattr(event, "error", None)
+                    message = getattr(error, "message", None) if error else None
+                    yield StreamChunk(
+                        StreamEventType.ERROR,
+                        str(message or error or "Unknown error"),
+                        None,
+                        None,
+                        None,
+                        None,
+                        event,
+                    )
+                    continue
+
+                if event_type in {"response.canceled", "response.truncated"}:
+                    yield StreamChunk(
+                        StreamEventType.MESSAGE_END,
+                        None,
+                        None,
+                        None,
+                        event_type.split(".")[-1],
+                        None,
+                        event,
+                    )
+                    continue
+
+                if event_type == "response.output_text.done":
+                    continue
+
+                yield StreamChunk(StreamEventType.SYSTEM, None, None, None, None, None, event)
+
+    def _stream_chat_api(self, prepared: PreparedRequest) -> Iterator[StreamChunk]:
+        client = get_client()
+        payload = dict(prepared.payload)
+        payload["stream"] = True
+
+        response_iterator = client.chat.completions.create(**payload)
+        for chunk in response_iterator:
+            choices = getattr(chunk, "choices", []) or []
+            if not choices:
+                continue
+            choice = choices[0]
+            delta = getattr(choice, "delta", None)
+            if delta:
+                text = getattr(delta, "content", None)
+                if text:
+                    yield StreamChunk(StreamEventType.TEXT_DELTA, str(text), None, None, None, None, chunk)
+
+                tool_calls = getattr(delta, "tool_calls", None)
+                if tool_calls:
+                    for tool_delta in tool_calls:
+                        tool_payload = self._coerce_tool_call_delta(tool_delta)
+                        if tool_payload:
+                            yield StreamChunk(
+                                StreamEventType.TOOL_CALL_DELTA,
+                                None,
+                                None,
+                                tool_payload,
+                                None,
+                                None,
+                                chunk,
+                            )
+
+            finish_reason = getattr(choice, "finish_reason", None)
+            if finish_reason:
+                usage = getattr(chunk, "usage", None)
+                yield StreamChunk(
+                    StreamEventType.MESSAGE_END,
+                    None,
+                    None,
+                    None,
+                    str(finish_reason),
+                    self._coerce_to_dict(usage),
+                    chunk,
+                )
+
+    @staticmethod
+    def _coerce_to_dict(value: Any) -> dict[str, Any] | None:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        if hasattr(value, "model_dump"):
+            try:
+                dumped = value.model_dump()  # type: ignore[call-arg]
+                if isinstance(dumped, dict):
+                    return dumped
+            except TypeError:
+                pass
+        if hasattr(value, "to_dict"):
+            result = value.to_dict()
+            if isinstance(result, dict):
+                return result
+        if hasattr(value, "__dict__"):
+            return {
+                key: val
+                for key, val in value.__dict__.items()
+                if not key.startswith("_")
+            }
+        return None
+
+    def _coerce_tool_call_delta(self, tool_delta: Any) -> dict[str, Any] | None:
+        if tool_delta is None:
+            return None
+        payload = {
+            "id": getattr(tool_delta, "id", None),
+            "type": getattr(tool_delta, "type", None),
+        }
+
+        function_delta = getattr(tool_delta, "function", None)
+        if function_delta:
+            payload["function"] = {
+                "name": getattr(function_delta, "name", None),
+                "arguments": getattr(function_delta, "arguments", None),
+            }
+
+        return {key: value for key, value in payload.items() if value is not None} or None
 
 
 __all__ = ["OpenAIArchitect"]

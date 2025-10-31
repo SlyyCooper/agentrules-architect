@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncIterator, Iterator
 from typing import Any
 
 from core.agents.base import BaseArchitect, ModelProvider, ReasoningMode
+from core.streaming import StreamChunk, StreamEventType
+from core.utils.async_stream import iterate_in_thread
 
-from .client import execute_chat_completion
+from .client import execute_chat_completion, get_client
 from .config import ModelDefaults, resolve_base_url, resolve_model_defaults
 from .prompting import default_prompt_template
 from .prompting import format_prompt as format_analysis_prompt
@@ -37,7 +40,7 @@ class DeepSeekArchitect(BaseArchitect):
         effective_reasoning = reasoning or self._defaults.default_reasoning
 
         self._client_override: Any | None = None
-        supports_sampling = self.model_name.lower() != "deepseek-reasoner"
+        supports_sampling = model_name.lower() != "deepseek-reasoner"
         effective_temperature = temperature if supports_sampling else None
         if temperature is not None and not supports_sampling:
             logger.info(
@@ -63,6 +66,10 @@ class DeepSeekArchitect(BaseArchitect):
 
         self.prompt_template = prompt_template or default_prompt_template()
         self.base_url = resolve_base_url(base_url)
+
+    @property
+    def supports_streaming(self) -> bool:
+        return True
 
     # Public API -----------------------------------------------------------------
     def format_prompt(self, context: dict[str, Any]) -> str:
@@ -140,6 +147,60 @@ class DeepSeekArchitect(BaseArchitect):
                 "agent": agent_name,
                 "error": str(exc),
             }
+
+    def stream_analyze(
+        self,
+        context: dict[str, Any],
+        tools: list[Any] | None = None,
+    ) -> AsyncIterator[StreamChunk]:
+        async def _generator() -> AsyncIterator[StreamChunk]:
+            content = context.get("formatted_prompt") or self.format_prompt(context)
+
+            provider_tools = resolve_tool_config(
+                tools,
+                self.tools_config,
+                allow_tools=self._defaults.tools_allowed,
+            )
+
+            tools_requested = bool(tools or (self.tools_config and self.tools_config.get("enabled")))
+            if tools_requested and not self._defaults.tools_allowed:
+                logger.info(
+                    (
+                        "[bold teal]%s:[/bold teal] Ignoring tool configuration because %s "
+                        "does not support function calling."
+                    ),
+                    self.name or "DeepSeek Architect",
+                    self.model_name,
+                )
+
+            prepared = self._prepare_request(content, provider_tools)
+
+            from core.utils.model_config_helper import get_model_config_name  # Local import to avoid cycles
+
+            model_config_name = get_model_config_name(self)
+            agent_name = self.name or f"DeepSeek {self.model_name.replace('-', ' ').title()}"
+            detail_parts: list[str] = []
+            if provider_tools:
+                detail_parts.append("with tools enabled")
+            if self._defaults.max_output_tokens:
+                detail_parts.append(f"max_tokens={self._defaults.max_output_tokens}")
+
+            detail_suffix = f" ({', '.join(detail_parts)})" if detail_parts else ""
+            logger.info(
+                f"[bold teal]{agent_name}:[/bold teal] Streaming request to {self.model_name} "
+                f"(Config: {model_config_name}){detail_suffix}"
+            )
+
+            try:
+                async for chunk in iterate_in_thread(lambda: self._stream_dispatch(prepared)):
+                    yield chunk
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.error(
+                    f"[bold red]Streaming error in {agent_name}:[/bold red] {str(exc)}"
+                )
+                raise
+
+        return _generator()
 
     async def create_analysis_plan(self, phase1_results: dict, prompt: str | None = None) -> dict[str, Any]:
         context: dict[str, Any] = {"phase1_results": phase1_results}
@@ -234,3 +295,93 @@ class DeepSeekArchitect(BaseArchitect):
         if result.get("error"):
             response["error"] = result["error"]
         return response
+
+    def _stream_dispatch(self, prepared: PreparedRequest) -> Iterator[StreamChunk]:
+        client = self._client_override or get_client(self.base_url)
+        payload = dict(prepared.payload)
+        payload["stream"] = True
+
+        iterator = client.chat.completions.create(**payload)
+        for chunk in iterator:
+            choices = getattr(chunk, "choices", []) or []
+            if not choices:
+                continue
+            choice = choices[0]
+            delta = getattr(choice, "delta", None)
+            if delta:
+                text = getattr(delta, "content", None)
+                if text:
+                    yield StreamChunk(StreamEventType.TEXT_DELTA, str(text), None, None, None, None, chunk)
+
+                reasoning = getattr(delta, "reasoning_content", None)
+                if reasoning:
+                    yield StreamChunk(StreamEventType.REASONING_DELTA, None, str(reasoning), None, None, None, chunk)
+
+                tool_calls = getattr(delta, "tool_calls", None)
+                if tool_calls:
+                    for tool_delta in tool_calls:
+                        tool_payload = self._coerce_tool_delta(tool_delta)
+                        if tool_payload:
+                            yield StreamChunk(
+                                StreamEventType.TOOL_CALL_DELTA,
+                                None,
+                                None,
+                                tool_payload,
+                                None,
+                                None,
+                                chunk,
+                            )
+
+            finish_reason = getattr(choice, "finish_reason", None)
+            if finish_reason:
+                usage = getattr(chunk, "usage", None)
+                yield StreamChunk(
+                    StreamEventType.MESSAGE_END,
+                    None,
+                    None,
+                    None,
+                    str(finish_reason),
+                    self._to_dict(usage),
+                    chunk,
+                )
+
+    @staticmethod
+    def _coerce_tool_delta(tool_delta: Any) -> dict[str, Any] | None:
+        if tool_delta is None:
+            return None
+        payload = {
+            "id": getattr(tool_delta, "id", None),
+            "type": getattr(tool_delta, "type", None),
+        }
+        function_delta = getattr(tool_delta, "function", None)
+        if function_delta:
+            payload["function"] = {
+                "name": getattr(function_delta, "name", None),
+                "arguments": getattr(function_delta, "arguments", None),
+            }
+        return {key: value for key, value in payload.items() if value is not None} or None
+
+    @staticmethod
+    def _to_dict(value: Any) -> dict[str, Any] | None:
+        if value is None:
+            return None
+        if isinstance(value, dict):
+            return value
+        if hasattr(value, "model_dump"):
+            try:
+                dumped = value.model_dump()  # type: ignore[call-arg]
+                if isinstance(dumped, dict):
+                    return dumped
+            except TypeError:
+                pass
+        if hasattr(value, "to_dict"):
+            result = value.to_dict()
+            if isinstance(result, dict):
+                return result
+        if hasattr(value, "__dict__"):
+            return {
+                key: val
+                for key, val in value.__dict__.items()
+                if not key.startswith("_")
+            }
+        return None
