@@ -176,6 +176,8 @@ class Phase1Analysis:
         base_context = dict(research_context)
         executed_tools: list[dict[str, Any]] = []
         latest_response: dict[str, Any] = {}
+        tool_requested = False
+        tool_succeeded = False
 
         context_payload: dict[str, Any] = dict(base_context)
         tools_for_agent: list[Tool] = list(researcher_tools) if researcher_tools else []
@@ -204,7 +206,10 @@ class Phase1Analysis:
                 latest_response.pop("function_calls", None)
                 break
 
+            tool_requested = True
             executed_tools.extend(latest_tool_runs)
+            if any(entry.get("success") for entry in latest_tool_runs):
+                tool_succeeded = True
 
             # Prepare follow-up context for the agent; include all prior tool output
             context_payload = dict(base_context)
@@ -228,6 +233,26 @@ class Phase1Analysis:
 
         if executed_tools:
             latest_response["executed_tools"] = executed_tools
+
+        if not tool_requested:
+            logging.warning(
+                "[bold yellow]Phase 1, Part 2:[/bold yellow] Skipping documentation research (no tools executed)."
+            )
+            return {
+                "status": "skipped",
+                "reason": "researcher-no-tools",
+                "executed_tools": executed_tools,
+            }
+
+        if not tool_succeeded:
+            logging.warning(
+                "[bold red]Phase 1, Part 2:[/bold red] Skipping documentation research (all tools failed)."
+            )
+            return {
+                "status": "skipped",
+                "reason": "researcher-tools-failed",
+                "executed_tools": executed_tools,
+            }
 
         return latest_response
 
@@ -276,14 +301,25 @@ class Phase1Analysis:
                 result_json = await _run_tavily_search(query, depth, max_results)
             else:
                 result_json = json.dumps({"error": "tavily not available in this environment"})
-            return {
+            execution_record: dict[str, Any] = {
                 "name": fn_name,
                 "args": {"query": query, "search_depth": depth, "max_results": max_results},
-                "result": result_json
+                "result": result_json,
             }
+            try:
+                parsed_result = json.loads(result_json)
+            except json.JSONDecodeError:
+                execution_record["error"] = "invalid-json-response"
+            else:
+                if isinstance(parsed_result, dict) and parsed_result.get("error"):
+                    execution_record["error"] = str(parsed_result["error"])
+                else:
+                    execution_record["success"] = True
+            return execution_record
 
         return {
             "name": fn_name,
             "args": args,
-            "result": json.dumps({"error": f"unsupported tool '{fn_name}'"})
+            "result": json.dumps({"error": f"unsupported tool '{fn_name}'"}),
+            "error": f"unsupported tool '{fn_name}'",
         }
