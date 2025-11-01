@@ -52,7 +52,7 @@ class Phase1Analysis:
     # Initialization
     # Sets up the agents required for the initial discovery.
     # ----------------------------------------------------
-    def __init__(self):
+    def __init__(self, researcher_enabled: bool = True):
         """
         Initialize the Phase 1 analysis with the required architects.
         """
@@ -81,13 +81,15 @@ class Phase1Analysis:
             )
         ]
 
-        # Initialize the researcher agent separately
-        self.researcher_architect = get_researcher_architect(
-            name=RESEARCHER_AGENT_PROMPT["name"],
-            role=RESEARCHER_AGENT_PROMPT["role"],
-            responsibilities=RESEARCHER_AGENT_PROMPT["responsibilities"],
-            prompt_template=PHASE_1_BASE_PROMPT
-        )
+        self.researcher_enabled = researcher_enabled
+        self.researcher_architect: Any | None = None
+        if self.researcher_enabled:
+            self.researcher_architect = get_researcher_architect(
+                name=RESEARCHER_AGENT_PROMPT["name"],
+                role=RESEARCHER_AGENT_PROMPT["role"],
+                responsibilities=RESEARCHER_AGENT_PROMPT["responsibilities"],
+                prompt_template=PHASE_1_BASE_PROMPT
+            )
 
     # ----------------------------------------------------
     # Run Method
@@ -119,26 +121,39 @@ class Phase1Analysis:
         logging.info("[bold green]Phase 1, Part 1:[/bold green] All initial agents have completed their analysis")
 
         # Part 2: Run the researcher agent
-        logging.info("[bold]Phase 1, Part 2:[/bold] Starting documentation research")
+        if not self.researcher_architect:
+            skip_reason = (
+                "researcher-disabled" if not self.researcher_enabled else "researcher-unavailable"
+            )
+            logging.info(
+                "[bold yellow]Phase 1, Part 2:[/bold yellow] Skipping documentation research (%s)",
+                skip_reason,
+            )
+            research_findings: dict[str, Any] = {
+                "status": "skipped",
+                "reason": skip_reason,
+            }
+        else:
+            logging.info("[bold]Phase 1, Part 2:[/bold] Starting documentation research")
 
-        # Combine dependency and tech stack findings for the researcher
-        # The Dependency agent is the second one (index 1), Tech Stack is the third (index 2)
-        dependency_findings = initial_results[1]
-        tech_stack_findings = initial_results[2]
+            # Combine dependency and tech stack findings for the researcher
+            # The Dependency agent is the second one (index 1), Tech Stack is the third (index 2)
+            dependency_findings = initial_results[1]
+            tech_stack_findings = initial_results[2]
 
-        research_context = {
-            "dependencies": dependency_findings,
-            "tech_stack": tech_stack_findings
-        }
+            research_context = {
+                "dependencies": dependency_findings,
+                "tech_stack": tech_stack_findings
+            }
 
-        # Provide web-search tool to the researcher
-        researcher_tools = TOOL_SETS.get("RESEARCHER_TOOLS", [])
-        research_findings = await self._run_researcher_with_tools(
-            research_context,
-            researcher_tools
-        )
+            # Provide web-search tool to the researcher
+            researcher_tools = TOOL_SETS.get("RESEARCHER_TOOLS", [])
+            research_findings = await self._run_researcher_with_tools(
+                research_context,
+                researcher_tools
+            )
 
-        logging.info("[bold green]Phase 1, Part 2:[/bold green] Documentation research complete")
+            logging.info("[bold green]Phase 1, Part 2:[/bold green] Documentation research complete")
 
         # Return the combined results.
         return {
@@ -153,6 +168,9 @@ class Phase1Analysis:
         researcher_tools: Sequence[Tool] | None
     ) -> dict[str, Any]:
         """Execute the researcher architect, completing tool loops when required."""
+
+        if not self.researcher_architect:
+            raise RuntimeError("Researcher architect is not initialized")
 
         # Preserve the base context so each iteration starts from shared facts
         base_context = dict(research_context)

@@ -460,8 +460,6 @@ def configure_models(context: CliContext) -> None:
         "Select a phase to adjust its model preset. Choose 'Reset to default' inside the phase menu to revert.\n"
     )
 
-    provider_keys = configuration.get_provider_keys()
-    active = configuration.get_active_presets()
     updated = False
 
     def _split_preset_label(label: str) -> tuple[str, str | None]:
@@ -481,7 +479,232 @@ def configure_models(context: CliContext) -> None:
             return "Not configured", ""
         return info.label, info.provider_display
 
+    def _configure_researcher_phase(
+        presets: list[model_config.PresetInfo],
+        current_key: str | None,
+        default_key: str | None,
+        current_mode: str,
+        tavily_available: bool,
+    ) -> bool:
+        mode_choices = [
+            questionary.Choice(
+                title="Auto – enable when Tavily key is available"
+                + (" [current]" if current_mode == "auto" else ""),
+                value="auto",
+            ),
+            questionary.Choice(
+                title="Force on – always run the researcher agent"
+                + (" [current]" if current_mode == "on" else ""),
+                value="on",
+            ),
+            questionary.Choice(
+                title="Disable researcher agent"
+                + (" [current]" if current_mode == "off" else ""),
+                value="off",
+            ),
+            navigation_choice("Cancel", value="__CANCEL__"),
+        ]
+
+        mode_selection = questionary.select(
+            "Researcher agent mode:",
+            choices=mode_choices,
+            default=current_mode,
+            qmark="🔍",
+            style=CLI_STYLE,
+        ).ask()
+
+        if mode_selection in (None, "__CANCEL__"):
+            console.print("[yellow]Researcher configuration cancelled.[/]")
+            return False
+
+        if mode_selection == "off":
+            if current_mode != "off":
+                configuration.save_researcher_mode("off")
+                console.print("[yellow]Researcher agent disabled for Phase 1.[/]")
+                return True
+            console.print("[dim]Researcher agent already disabled.[/]")
+            return False
+
+        desired_mode = mode_selection
+        mode_changed = desired_mode != current_mode
+
+        default_info = model_config.get_preset_info(default_key) if default_key else None
+        current_label, _ = _current_labels(current_key)
+
+        model_choices: list[questionary.Choice] = []
+        keep_title = "Keep current preset"
+        if current_label and current_label != "Not configured":
+            keep_title = f"Keep current preset ({current_label})"
+        model_choices.append(questionary.Choice(title=keep_title, value="__KEEP__"))
+        if default_info:
+            model_choices.append(
+                questionary.Choice(
+                    title=f"Reset to default ({default_info.label} – {default_info.provider_display})",
+                    value="__RESET__",
+                )
+            )
+        else:
+            model_choices.append(questionary.Choice(title="Reset to default", value="__RESET__"))
+
+        grouped_entries: list[dict[str, Any]] = []
+        grouped_lookup: dict[tuple[str, str, str], dict[str, Any]] = {}
+        for preset in presets:
+            base_label, variant_label = _split_preset_label(preset.label)
+            group_key = (preset.provider_slug, base_label, preset.provider_display)
+            if group_key not in grouped_lookup:
+                grouped_lookup[group_key] = {
+                    "base_label": base_label,
+                    "provider_display": preset.provider_display,
+                    "variants": [],
+                }
+                grouped_entries.append(grouped_lookup[group_key])
+            grouped_lookup[group_key]["variants"].append(
+                {
+                    "preset": preset,
+                    "preset_key": preset.key,
+                    "variant_label": variant_label,
+                    "variant_display": _variant_display_text(variant_label),
+                }
+            )
+
+        group_selection_map: dict[str, dict[str, Any]] = {}
+        for idx, entry in enumerate(grouped_entries):
+            variants = entry["variants"]
+            if len(variants) == 1:
+                variant = variants[0]
+                title_label = f"{entry['base_label']} [{entry['provider_display']}]"
+                if variant["preset_key"] == default_key:
+                    title_label += " (default)"
+                if variant["preset_key"] == current_key:
+                    title_label += " [current]"
+                model_choices.append(
+                    model_display_choice(
+                        title_label,
+                        variant["preset"].label,
+                        variant["preset"].provider_display,
+                        value=variant["preset_key"],
+                    )
+                )
+            else:
+                current_variant = next((v for v in variants if v["preset_key"] == current_key), None)
+                default_variant = next((v for v in variants if v["preset_key"] == default_key), None)
+                summary = f"{entry['base_label']} — {len(variants)} options"
+                if current_variant:
+                    summary += f" (current: {current_variant['variant_display']})"
+                elif default_variant:
+                    summary += f" (default: {default_variant['variant_display']})"
+                group_value = f"__GROUP__R{idx}"
+                model_choices.append(
+                    model_display_choice(
+                        summary,
+                        entry["base_label"],
+                        entry["provider_display"],
+                        value=group_value,
+                    )
+                )
+                group_selection_map[group_value] = {
+                    "entry": entry,
+                    "variants": variants,
+                    "current_key": current_key,
+                    "default_key": default_key,
+                }
+
+        selection = questionary.select(
+            "Researcher preset:",
+            choices=model_choices,
+            default="__KEEP__",
+            qmark="🧠",
+            style=CLI_STYLE,
+        ).ask()
+
+        if selection is None:
+            console.print("[yellow]Researcher configuration cancelled.[/]")
+            return False
+
+        if selection in group_selection_map:
+            group_data = group_selection_map[selection]
+            entry = group_data["entry"]
+            variants = group_data["variants"]
+            variant_choices: list[questionary.Choice] = []
+            for variant in variants:
+                variant_title = variant["variant_display"]
+                if variant["preset_key"] == group_data["default_key"]:
+                    variant_title += " (default)"
+                if variant["preset_key"] == group_data["current_key"]:
+                    variant_title += " [current]"
+                variant_choices.append(
+                    model_variant_choice(
+                        variant_title,
+                        variant["variant_display"],
+                        entry["provider_display"],
+                        value=variant["preset_key"],
+                    )
+                )
+
+            preferred_default = group_data["current_key"] or group_data["default_key"]
+            if not preferred_default or not any(choice.value == preferred_default for choice in variant_choices):
+                preferred_default = variant_choices[0].value
+
+            selection = questionary.select(
+                f"{entry['base_label']} [{entry['provider_display']}] – choose variant:",
+                choices=variant_choices,
+                default=preferred_default,
+                qmark="🧠",
+                style=CLI_STYLE,
+            ).ask()
+
+            if selection is None:
+                console.print("[yellow]Researcher configuration cancelled.[/]")
+                return False
+
+        if selection == "__KEEP__":
+            if mode_changed:
+                configuration.save_researcher_mode(desired_mode)
+                if desired_mode == "auto":
+                    if tavily_available:
+                        console.print("[green]Researcher mode set to auto; runs when Tavily search is available.[/]")
+                    else:
+                        console.print("[yellow]Researcher mode set to auto. Add a Tavily API key to enable runs.[/]")
+                else:
+                    console.print("[green]Researcher mode set to forced on.[/]")
+                return True
+            console.print("[dim]No changes made to researcher settings.[/]")
+            return False
+
+        preset_changed = False
+        if selection == "__RESET__":
+            configuration.save_phase_model("researcher", None)
+            console.print("[green]Researcher preset reset to default.[/]")
+            preset_changed = True
+        else:
+            configuration.save_phase_model("researcher", selection)
+            preset_info = model_config.get_preset_info(selection)
+            if preset_info:
+                console.print(
+                    f"[green]Researcher agent will use {preset_info.label} [{preset_info.provider_display}].[/]"
+                )
+            else:
+                console.print("[green]Researcher preset updated.[/]")
+            preset_changed = True
+
+        if mode_changed:
+            configuration.save_researcher_mode(desired_mode)
+            if desired_mode == "auto":
+                if tavily_available:
+                    console.print("[green]Researcher mode set to auto; it will run when Tavily search is available.[/]")
+                else:
+                    console.print("[yellow]Researcher mode set to auto. Add a Tavily API key to enable runs.[/]")
+            else:
+                console.print("[green]Researcher mode set to forced on.[/]")
+
+        return preset_changed or mode_changed
+
     while True:
+        provider_keys = configuration.get_provider_keys()
+        active = configuration.get_active_presets()
+        researcher_mode = configuration.get_researcher_mode()
+        tavily_available = configuration.has_tavily_credentials()
+
         phase_choices: list[questionary.Choice | questionary.Separator] = []
         handled_phases: set[str] = set()
 
@@ -506,6 +729,15 @@ def configure_models(context: CliContext) -> None:
 
                 researcher_key = active.get("researcher", model_config.get_default_preset_key("researcher"))
                 researcher_model, researcher_provider = _current_labels(researcher_key)
+                if researcher_mode == "off":
+                    researcher_model = "Disabled"
+                    researcher_provider = ""
+                else:
+                    mode_suffix = " (auto)" if researcher_mode == "auto" else " (forced)"
+                    if researcher_model != "Not configured":
+                        researcher_model = f"{researcher_model}{mode_suffix}"
+                    if researcher_mode == "auto" and not tavily_available:
+                        researcher_model += " – awaiting Tavily key"
                 researcher_title = model_config.get_phase_title("researcher")
                 phase_choices.append(
                     model_display_choice(
@@ -552,6 +784,17 @@ def configure_models(context: CliContext) -> None:
         default_key = model_config.get_default_preset_key(phase)
         current_key = active.get(phase, default_key)
         default_info = model_config.get_preset_info(default_key) if default_key else None
+
+        if phase == "researcher":
+            if _configure_researcher_phase(
+                presets,
+                current_key,
+                default_key,
+                researcher_mode,
+                tavily_available,
+            ):
+                updated = True
+            continue
 
         model_choices: list[questionary.Choice] = []
         if default_info:
@@ -695,11 +938,9 @@ def configure_models(context: CliContext) -> None:
 
         if selection == "__RESET__":
             configuration.save_phase_model(phase, None)
-            active.pop(phase, None)
             console.print(f"[green]{title} reset to default preset.[/]")
         else:
             configuration.save_phase_model(phase, selection)
-            active[phase] = selection
             preset_info = model_config.get_preset_info(selection)
             if preset_info:
                 console.print(f"[green]{title} now uses {preset_info.label} [{preset_info.provider_display}].[/]")
@@ -708,6 +949,7 @@ def configure_models(context: CliContext) -> None:
         updated = True
 
     if updated:
+        active = configuration.get_active_presets()
         overrides = {phase: key for phase, key in active.items() if phase in model_config.PHASE_SEQUENCE and key}
         configuration.apply_model_overrides(overrides)
         configuration.apply_model_overrides()

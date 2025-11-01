@@ -7,6 +7,7 @@ DummyArchitects returning deterministic outputs and emits a Tavily
 tool call for the Researcher to exercise tool execution.
 """
 
+import os
 from typing import Any
 
 from config.agents import MODEL_CONFIG
@@ -83,6 +84,8 @@ class DummyArchitect(BaseArchitect):
 
 def patch_factory_offline() -> None:
     from core.agents.factory import factory as fact
+
+    os.environ.setdefault("OFFLINE", "1")
 
     def _make_dummy(name: str | None, role: str | None, responsibilities: list[str] | None):
         model_config = next(iter(MODEL_CONFIG.values()))

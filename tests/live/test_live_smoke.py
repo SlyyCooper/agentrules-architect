@@ -16,7 +16,7 @@ async def test_live_final_analysis_smoke():
     env_needed = {
         "openai": "OPENAI_API_KEY",
         "anthropic": "ANTHROPIC_API_KEY",
-        "gemini": "GEMINI_API_KEY",  # google-genai
+        "gemini": "GOOGLE_API_KEY",  # google-genai
         "deepseek": "DEEPSEEK_API_KEY",
     }.get(provider)
 
@@ -32,4 +32,3 @@ async def test_live_final_analysis_smoke():
     # Provider responses vary, but should produce an analysis or a structured error
     assert isinstance(result, dict)
     assert "error" in result or "analysis" in result
-

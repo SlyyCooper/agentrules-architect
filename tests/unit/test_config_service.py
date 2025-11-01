@@ -75,3 +75,21 @@ class ConfigServiceTestCase(unittest.TestCase):
         os.environ.pop(self.config_service.VERBOSITY_ENV_VAR, None)
         level = self.config_service.resolve_log_level()
         self.assertEqual(level, self.config_service.logging.WARNING)
+
+    def test_researcher_mode_auto_requires_tavily_key(self) -> None:
+        self.assertEqual(self.config_service.get_researcher_mode(), "auto")
+        self.assertFalse(self.config_service.has_tavily_credentials())
+        self.assertFalse(self.config_service.is_researcher_enabled())
+
+        self.config_service.set_provider_key("tavily", "tavily-test-key")
+        self.assertTrue(self.config_service.has_tavily_credentials())
+        self.assertTrue(self.config_service.is_researcher_enabled())
+
+    def test_researcher_mode_explicit_overrides(self) -> None:
+        self.config_service.set_researcher_mode("off")
+        self.assertEqual(self.config_service.get_researcher_mode(), "off")
+        self.assertFalse(self.config_service.is_researcher_enabled())
+
+        self.config_service.set_researcher_mode("on")
+        self.assertEqual(self.config_service.get_researcher_mode(), "on")
+        self.assertTrue(self.config_service.is_researcher_enabled())

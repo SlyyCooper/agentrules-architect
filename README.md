@@ -105,7 +105,7 @@ agentrules keys
 - `agentrules` – interactive main menu (analyze, configure models/outputs, check keys).
 - `agentrules analyze /path/to/project` – full six-phase analysis.
   - `--offline` switches to deterministic dummy providers (also enabled via `OFFLINE=1`).
-- `agentrules configure --models` – assign presets per phase with guided prompts.
+- `agentrules configure --models` – assign presets per phase with guided prompts; the Phase 1 → Researcher entry lets you toggle the agent (`Auto`, `On`, `Off`).
 - `agentrules configure --outputs` – toggle `.cursorignore`, `phases_output/`, and custom rules filename.
 - `agentrules configure --logging` – set verbosity (`quiet`, `standard`, `verbose`) or export via `AGENTRULES_LOG_LEVEL`.
 
@@ -115,6 +115,7 @@ agentrules keys
   - `providers` – API keys per provider.
   - `models` – preset IDs applied to each phase (`phase1`, `phase2`, `final`, `researcher`, …).
   - `outputs` – `generate_cursorignore`, `generate_phase_outputs`, `rules_filename`.
+  - `features` – `researcher_mode` (`auto`/`on`/`off`) to control Phase 1 web research (managed from the Researcher row in the models wizard).
   - `exclusions` – add/remove directories, files, or extensions; choose to respect `.gitignore`.
 - **Runtime helpers** (from `agentrules/config_service.py`):
   - `get_effective_exclusions()` resolves overrides with defaults from `config/exclusions.py`.
@@ -152,7 +153,7 @@ Adjust presets through the CLI (`agentrules configure --models`) or by editing `
 
 - `core/agent_tools/tool_manager.py` normalizes JSON tool schemas for each provider.
 - `config/tools.py` exposes `TOOL_SETS` and a `with_tools_enabled` helper for models that accept function/tool calls.
-- Tavily search (`tavily_web_search`) ships as the default researcher tool. Set `TAVILY_API_KEY` and enable the researcher agent preset to give phases access to live web data.
+- Tavily search (`tavily_web_search`) ships as the default researcher tool. Set `TAVILY_API_KEY` and leave the researcher mode on `Auto` so Phase 1 opts in automatically; switch to `On` or `Off` from the models wizard’s Researcher entry. When disabled (or no key is present), documentation research is skipped; offline runs force the researcher on for smoke coverage.
 
 ## 🧱 Project Architecture
 

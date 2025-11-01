@@ -11,6 +11,7 @@ import logging
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Literal, cast
 
 try:  # Python 3.11+ ships tomllib in the standard library
     import tomllib as tomli  # type: ignore[import-not-found]
@@ -30,7 +31,7 @@ PROVIDER_ENV_MAP = {
     "anthropic": "ANTHROPIC_API_KEY",
     "openai": "OPENAI_API_KEY",
     "deepseek": "DEEPSEEK_API_KEY",
-    "gemini": "GEMINI_API_KEY",
+    "gemini": "GOOGLE_API_KEY",
     "xai": "XAI_API_KEY",
     "tavily": "TAVILY_API_KEY",
 }
@@ -41,6 +42,10 @@ VERBOSITY_PRESETS = {
     "standard": logging.INFO,
     "verbose": logging.DEBUG,
 }
+
+TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
+
+ResearcherMode = Literal["auto", "on", "off"]
 
 
 @dataclass
@@ -78,12 +83,21 @@ class ExclusionOverrides:
 
 
 @dataclass
+class FeatureToggles:
+    researcher_mode: ResearcherMode = "auto"
+
+    def is_default(self) -> bool:
+        return self.researcher_mode == "auto"
+
+
+@dataclass
 class CLIConfig:
     providers: dict[str, ProviderConfig] = field(default_factory=dict)
     models: dict[str, str] = field(default_factory=dict)
     verbosity: str | None = None
     outputs: OutputPreferences = field(default_factory=OutputPreferences)
     exclusions: ExclusionOverrides = field(default_factory=ExclusionOverrides)
+    features: FeatureToggles = field(default_factory=FeatureToggles)
 
     @classmethod
     def from_dict(cls, payload: dict) -> CLIConfig:
@@ -127,12 +141,20 @@ class CLIConfig:
             add_extensions=_coerce_string_list(exclusions_payload, "extensions"),
             remove_extensions=_coerce_string_list(exclusions_payload, "remove_extensions"),
         )
+        features_payload = payload.get("features")
+        features = FeatureToggles(
+            researcher_mode=_normalize_researcher_mode(
+                features_payload.get("researcher_mode") if isinstance(features_payload, dict) else None,
+                default="auto",
+            )
+        )
         return cls(
             providers=providers,
             models=models,
             verbosity=verbosity,
             outputs=outputs,
             exclusions=exclusions,
+            features=features,
         )
 
     def to_dict(self) -> dict:
@@ -168,6 +190,10 @@ class CLIConfig:
             if not self.exclusions.respect_gitignore:
                 exclusions_payload["respect_gitignore"] = False
             payload["exclusions"] = exclusions_payload
+        if not self.features.is_default():
+            features_payload = payload.setdefault("features", {})
+            features_dict = cast(dict[str, object], features_payload)
+            features_dict["researcher_mode"] = self.features.researcher_mode
         return payload
 
 
@@ -202,6 +228,46 @@ def set_phase_model(phase: str, preset_key: str | None) -> CLIConfig:
         config.models.pop(phase, None)
     save_config(config)
     return config
+
+
+def set_researcher_mode(mode: str | None) -> CLIConfig:
+    config = load_config()
+    config.features.researcher_mode = _normalize_researcher_mode(mode, default="auto")
+    save_config(config)
+    return config
+
+
+def get_researcher_mode(default: ResearcherMode = "auto") -> ResearcherMode:
+    config = load_config()
+    normalized = _normalize_researcher_mode(config.features.researcher_mode, default=default)
+    if normalized != config.features.researcher_mode:
+        config.features.researcher_mode = normalized
+        save_config(config)
+    return normalized
+
+
+def has_tavily_credentials(config: CLIConfig | None = None) -> bool:
+    config = config or load_config()
+    stored = config.providers.get("tavily")
+    if stored and stored.api_key:
+        return True
+    env_var = PROVIDER_ENV_MAP.get("tavily")
+    return bool(env_var and os.getenv(env_var))
+
+
+def is_researcher_enabled(config: CLIConfig | None = None) -> bool:
+    config = config or load_config()
+    mode = _normalize_researcher_mode(config.features.researcher_mode, default="auto")
+
+    offline_flag = os.getenv("OFFLINE")
+    if offline_flag and offline_flag.strip().lower() in TRUTHY_ENV_VALUES:
+        return True
+
+    if mode == "on":
+        return True
+    if mode == "off":
+        return False
+    return has_tavily_credentials(config)
 
 
 def set_logging_verbosity(verbosity: str | None) -> CLIConfig:
@@ -441,6 +507,14 @@ def _exclusion_attr_names(kind: str) -> tuple[str, str]:
     return mapping[kind]
 
 
+def _normalize_researcher_mode(value: object, *, default: ResearcherMode) -> ResearcherMode:
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"auto", "on", "off"}:
+            return normalized  # type: ignore[return-value]
+    return default
+
+
 def _normalize_verbosity_label(label: str | None) -> str | None:
     if not label:
         return None
@@ -480,6 +554,8 @@ def apply_config_to_environment(config: CLIConfig | None = None) -> None:
         env_var = PROVIDER_ENV_MAP.get(provider)
         if not env_var or not cfg.api_key:
             continue
+        if provider == "gemini":
+            os.environ.pop("GEMINI_API_KEY", None)
         if not os.getenv(env_var):
             os.environ[env_var] = cfg.api_key
 

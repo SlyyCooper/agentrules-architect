@@ -22,6 +22,7 @@ class AnalysisView:
         self.console = console
         self._phase_index = 0
         self._agent_progress: dict[str, _AgentProgress] = {}
+        self._progress_phases: set[str] = set()
 
     def _indent(self, renderable: Any, level: int = 1) -> Padding:
         return Padding(renderable, (0, 0, 0, level * 2))
@@ -91,6 +92,7 @@ class AnalysisView:
         board = _AgentProgress(self.console, color)
         board.start(agents)
         self._agent_progress[phase] = board
+        self._progress_phases.add(phase)
 
     def update_agent_progress(
         self,
@@ -107,14 +109,20 @@ class AnalysisView:
             board = _AgentProgress(self.console, board_color)
             board.start([])
             self._agent_progress[phase] = board
+            self._progress_phases.add(phase)
         board.update(agent_id, agent_name, status, icon, icon_color)
 
     def stop_agent_progress(self, phase: str) -> None:
         board = self._agent_progress.pop(phase, None)
         if board:
             board.stop()
+        self._progress_phases.discard(phase)
 
     async def run_with_spinner(self, description: str, color: str, awaitable: Awaitable[T]) -> T:
+        if self._progress_phases:
+            self.console.print(self._indent(Text(f"{description}", style=color)))
+            return await awaitable
+
         spinner = SpinnerColumn(style=color, spinner_name="dots12")
         text = TextColumn("{task.description}", style=color)
         with Progress(spinner, text, console=self.console, transient=True) as progress:

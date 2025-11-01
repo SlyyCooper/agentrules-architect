@@ -23,6 +23,7 @@ from agentrules.config_service import (
     get_effective_exclusions,
     get_exclusion_overrides,
     get_rules_filename,
+    is_researcher_enabled,
     should_generate_cursorignore,
     should_generate_phase_outputs,
     should_respect_gitignore,
@@ -180,7 +181,7 @@ class ProjectAnalyzer:
         self.gitignore_path: Path | None = None
         self.respect_gitignore: bool = True
 
-        self.phase1_analyzer = Phase1Analysis()
+        self.phase1_analyzer = Phase1Analysis(researcher_enabled=is_researcher_enabled())
         self.phase2_analyzer = Phase2Analysis()
         self.phase3_analyzer = Phase3Analysis()
         self.phase4_analyzer = Phase4Analysis()

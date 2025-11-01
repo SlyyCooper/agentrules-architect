@@ -55,7 +55,15 @@ class GeminiArchitect(BaseArchitect):
             tools_config=tools_config,
         )
         self.prompt_template = prompt_template or default_prompt_template()
-        env_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+        google_key = os.environ.get("GOOGLE_API_KEY")
+        gemini_key = os.environ.get("GEMINI_API_KEY")
+        if gemini_key and not google_key:
+            os.environ["GOOGLE_API_KEY"] = gemini_key
+            google_key = gemini_key
+        if gemini_key:
+            os.environ.pop("GEMINI_API_KEY", None)
+
+        env_key = os.environ.get("GOOGLE_API_KEY")
         resolved_key = api_key or env_key
         should_attempt_client = api_key is not None or env_key is not None or os.environ.get(
             "GOOGLE_APPLICATION_CREDENTIALS"

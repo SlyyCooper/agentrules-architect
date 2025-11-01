@@ -30,6 +30,18 @@ from agentrules.config_service import (
     get_output_preferences as load_output_preferences,
 )
 from agentrules.config_service import (
+    get_researcher_mode as load_researcher_mode,
+)
+from agentrules.config_service import (
+    has_tavily_credentials as _has_tavily_credentials,
+)
+from agentrules.config_service import (
+    is_researcher_enabled as _is_researcher_enabled,
+)
+from agentrules.config_service import (
+    set_researcher_mode as persist_researcher_mode,
+)
+from agentrules.config_service import (
     should_generate_cursorignore as is_cursorignore_enabled,
 )
 from agentrules.config_service import (
@@ -76,6 +88,22 @@ def get_available_presets_for_phase(
 
 def save_phase_model(phase: str, preset_key: str | None) -> None:
     set_phase_model(phase, preset_key)
+
+
+def get_researcher_mode() -> str:
+    return load_researcher_mode()
+
+
+def save_researcher_mode(mode: str | None) -> None:
+    persist_researcher_mode(mode)
+
+
+def has_tavily_credentials() -> bool:
+    return _has_tavily_credentials()
+
+
+def is_researcher_active() -> bool:
+    return _is_researcher_enabled()
 
 
 def apply_model_overrides(overrides: Mapping[str, str] | None = None) -> dict[str, str]:

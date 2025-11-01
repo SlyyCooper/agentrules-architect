@@ -7,6 +7,7 @@ produces deterministic outputs and, for the Researcher, emits a Tavily
 tool call to exercise the tool execution path.
 """
 
+import os
 from types import ModuleType
 from typing import Any, cast
 
@@ -103,6 +104,8 @@ def patch_factory_offline() -> None:
     import core.agents as agents_pkg
     from config.agents import MODEL_CONFIG
     from core.agents.factory import factory as fact
+
+    os.environ.setdefault("OFFLINE", "1")
 
     def _make_dummy(name: str | None, role: str | None, responsibilities: list[str] | None):
         # Provider selection is irrelevant offline; keep provider/model_name values presentable.
