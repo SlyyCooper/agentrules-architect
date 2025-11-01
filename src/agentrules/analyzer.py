@@ -249,19 +249,23 @@ class ProjectAnalyzer:
             gitignore_spec=self.gitignore_spec,
         )
 
+        researcher_active = is_researcher_enabled()
+        subtitle = "Assessing dependencies, research gaps, structure, and tech stack"
         view.render_phase_header(
             "Phase 1 · Initial Discovery",
             "green",
-            "Assessing structure, dependencies, and tech stack",
+            subtitle,
         )
-        view.render_agent_overview(
-            (
-                "Structure Agent",
-                "Dependency Agent",
-                "Tech Stack Agent",
-            ),
-            color="green",
-        )
+        agents_overview = [
+            "Dependency Agent",
+        ]
+        if researcher_active:
+            agents_overview.append("Researcher Agent (optional)")
+        agents_overview.extend([
+            "Structure Agent",
+            "Tech Stack Agent",
+        ])
+        view.render_agent_overview(agents_overview, color="green")
         self.phase1_results = await view.run_with_spinner(
             "Running discovery agents...",
             "green",

@@ -20,6 +20,27 @@ Format your response as a structured report with clear sections and findings."""
 
 # Specific prompts for each agent in Phase 1
 
+# Dependency Agent prompts (dynamic per researcher availability)
+DEPENDENCY_KNOWLEDGE_GAP_PROMPT = {
+    "name": "Dependency Agent",
+    "role": "identifying dependency knowledge gaps",
+    "responsibilities": [
+        "Survey all manifest files to list the major packages, libraries, and frameworks that define the project",
+        "Capture the exact version requirements for each high-impact dependency",
+        "Highlight dependencies whose versions you are not familar with (e.g. new versions beyond those in your training data) so downstream agents can research them"
+    ]
+}
+
+DEPENDENCY_CATALOG_PROMPT = {
+    "name": "Dependency Agent",
+    "role": "investigating packages and libraries",
+    "responsibilities": [
+        "Investigate all packages, libraries, and frameworks declared in manifest files",
+        "Determine version requirements and note any discrepancies or conflicts",
+        "Summarize key runtime and build tooling so downstream agents have a complete reference"
+    ]
+}
+
 # Structure Agent prompt
 STRUCTURE_AGENT_PROMPT = {
     "name": "Structure Agent",
@@ -28,17 +49,6 @@ STRUCTURE_AGENT_PROMPT = {
         "Analyze directory and file organization",
         "Map project layout and file relationships",
         "Identify key architectural components"
-    ]
-}
-
-# Dependency Agent prompt
-DEPENDENCY_AGENT_PROMPT = {
-    "name": "Dependency Agent",
-    "role": "investigating packages and libraries",
-    "responsibilities": [
-        "Investigate all packages and libraries",
-        "Determine version requirements",
-        "Research compatibility issues"
     ]
 }
 
@@ -83,10 +93,25 @@ def format_agent_prompt(agent_config, context):
         context=context
     )
 
-# List of all Phase 1 agent configurations
+def get_dependency_agent_prompt(researcher_enabled: bool) -> dict:
+    """Return the dependency agent prompt suited to the active researcher mode."""
+
+    prompt = (
+        DEPENDENCY_KNOWLEDGE_GAP_PROMPT
+        if researcher_enabled
+        else DEPENDENCY_CATALOG_PROMPT
+    )
+    return {
+        "name": prompt["name"],
+        "role": prompt["role"],
+        "responsibilities": list(prompt["responsibilities"]),
+    }
+
+
+# List of all Phase 1 agent configurations (default order assumes researcher enabled)
 PHASE_1_AGENTS = [
+    DEPENDENCY_KNOWLEDGE_GAP_PROMPT,
     STRUCTURE_AGENT_PROMPT,
-    DEPENDENCY_AGENT_PROMPT,
     TECH_STACK_AGENT_PROMPT,
     RESEARCHER_AGENT_PROMPT
 ]

@@ -17,11 +17,11 @@ from collections.abc import Sequence  # For type hinting.
 from typing import Any
 
 from agentrules.config.prompts.phase_1_prompts import (  # Prompts used for configuring the agents in Phase 1.
-    DEPENDENCY_AGENT_PROMPT,
     PHASE_1_BASE_PROMPT,
     RESEARCHER_AGENT_PROMPT,
     STRUCTURE_AGENT_PROMPT,
     TECH_STACK_AGENT_PROMPT,
+    get_dependency_agent_prompt,
 )
 from agentrules.config.tools import TOOL_SETS
 from agentrules.core.agents.factory.factory import get_architect_for_phase, get_researcher_architect
@@ -56,32 +56,36 @@ class Phase1Analysis:
         """
         Initialize the Phase 1 analysis with the required architects.
         """
-        # Use the Architect architecture
+        self.researcher_enabled = researcher_enabled
+
+        dependency_prompt = get_dependency_agent_prompt(self.researcher_enabled)
+        self.dependency_architect = get_architect_for_phase(
+            "phase1",
+            name=dependency_prompt["name"],
+            role=dependency_prompt["role"],
+            responsibilities=dependency_prompt["responsibilities"],
+            prompt_template=PHASE_1_BASE_PROMPT,
+        )
+        self.structure_architect = get_architect_for_phase(
+            "phase1",
+            name=STRUCTURE_AGENT_PROMPT["name"],
+            role=STRUCTURE_AGENT_PROMPT["role"],
+            responsibilities=STRUCTURE_AGENT_PROMPT["responsibilities"],
+            prompt_template=PHASE_1_BASE_PROMPT,
+        )
+        self.tech_stack_architect = get_architect_for_phase(
+            "phase1",
+            name=TECH_STACK_AGENT_PROMPT["name"],
+            role=TECH_STACK_AGENT_PROMPT["role"],
+            responsibilities=TECH_STACK_AGENT_PROMPT["responsibilities"],
+            prompt_template=PHASE_1_BASE_PROMPT,
+        )
         self.initial_architects = [
-            get_architect_for_phase(
-                "phase1",
-                name=STRUCTURE_AGENT_PROMPT["name"],
-                role=STRUCTURE_AGENT_PROMPT["role"],
-                responsibilities=STRUCTURE_AGENT_PROMPT["responsibilities"],
-                prompt_template=PHASE_1_BASE_PROMPT
-            ),
-            get_architect_for_phase(
-                "phase1",
-                name=DEPENDENCY_AGENT_PROMPT["name"],
-                role=DEPENDENCY_AGENT_PROMPT["role"],
-                responsibilities=DEPENDENCY_AGENT_PROMPT["responsibilities"],
-                prompt_template=PHASE_1_BASE_PROMPT
-            ),
-            get_architect_for_phase(
-                "phase1",
-                name=TECH_STACK_AGENT_PROMPT["name"],
-                role=TECH_STACK_AGENT_PROMPT["role"],
-                responsibilities=TECH_STACK_AGENT_PROMPT["responsibilities"],
-                prompt_template=PHASE_1_BASE_PROMPT
-            )
+            self.dependency_architect,
+            self.structure_architect,
+            self.tech_stack_architect,
         ]
 
-        self.researcher_enabled = researcher_enabled
         self.researcher_architect: Any | None = None
         if self.researcher_enabled:
             self.researcher_architect = get_researcher_architect(
@@ -106,38 +110,19 @@ class Phase1Analysis:
         Returns:
             Dictionary containing the results of the phase
         """
-        logging.info("[bold]Phase 1, Part 1:[/bold] Starting initial analysis with 3 agents")
+        logging.info("[bold]Phase 1, Part 1:[/bold] Starting dependency analysis")
 
-        structure_context = {
-            "tree_structure": tree,
-        }
         dependency_context = {
             "dependency_manifests": package_info.get("manifests", []),
             "dependency_summary": package_info.get("summary", {}),
+            "researcher_expected": self.researcher_enabled,
         }
-        tech_stack_context = {
-            "tree_structure": tree,
-            "dependency_summary": package_info.get("summary", {}),
-        }
+        dependency_result = await self.dependency_architect.analyze(dependency_context)
 
-        architect_contexts = [
-            structure_context,
-            dependency_context,
-            tech_stack_context,
-        ]
+        logging.info("[bold green]Phase 1, Part 1:[/bold green] Dependency agent completed")
 
-        # Run initial architects in parallel
-        architect_tasks = [
-            architect.analyze(context)
-            for architect, context in zip(
-                self.initial_architects, architect_contexts, strict=True
-            )
-        ]
-        initial_results = await asyncio.gather(*architect_tasks)
-
-        logging.info("[bold green]Phase 1, Part 1:[/bold green] All initial agents have completed their analysis")
-
-        # Part 2: Run the researcher agent
+        # Part 2: Run the researcher agent (optional)
+        research_findings: dict[str, Any]
         if not self.researcher_architect:
             skip_reason = (
                 "researcher-disabled" if not self.researcher_enabled else "researcher-unavailable"
@@ -146,24 +131,21 @@ class Phase1Analysis:
                 "[bold yellow]Phase 1, Part 2:[/bold yellow] Skipping documentation research (%s)",
                 skip_reason,
             )
-            research_findings: dict[str, Any] = {
+            research_findings = {
                 "status": "skipped",
                 "reason": skip_reason,
             }
         else:
             logging.info("[bold]Phase 1, Part 2:[/bold] Starting documentation research")
 
-            # Combine dependency and tech stack findings for the researcher
-            # The Dependency agent is the second one (index 1), Tech Stack is the third (index 2)
-            dependency_findings = initial_results[1]
-            tech_stack_findings = initial_results[2]
-
             research_context = {
-                "dependencies": dependency_findings,
-                "tech_stack": tech_stack_findings
+                "dependency_findings": dependency_result.get("findings"),
+                "dependency_agent_error": dependency_result.get("error"),
+                "dependency_summary": package_info.get("summary", {}),
+                "dependency_manifests": package_info.get("manifests", []),
+                "tree_structure": tree,
             }
 
-            # Provide web-search tool to the researcher
             researcher_tools = TOOL_SETS.get("RESEARCHER_TOOLS", [])
             research_findings = await self._run_researcher_with_tools(
                 research_context,
@@ -171,6 +153,32 @@ class Phase1Analysis:
             )
 
             logging.info("[bold green]Phase 1, Part 2:[/bold green] Documentation research complete")
+
+        # Part 3: run structure and tech stack agents in parallel, now enriched with prior findings
+        structure_context = {
+            "tree_structure": tree,
+            "dependency_summary": package_info.get("summary", {}),
+            "dependency_findings": dependency_result.get("findings"),
+            "dependency_agent_error": dependency_result.get("error"),
+            "research_findings": research_findings.get("findings"),
+            "research_agent_error": research_findings.get("error"),
+            "research_status": research_findings.get("status"),
+        }
+        tech_stack_context = dict(structure_context)
+
+        logging.info("[bold]Phase 1, Part 3:[/bold] Running structure and tech stack agents in parallel")
+
+        structure_task = self.structure_architect.analyze(structure_context)
+        tech_stack_task = self.tech_stack_architect.analyze(tech_stack_context)
+        structure_result, tech_stack_result = await asyncio.gather(structure_task, tech_stack_task)
+
+        logging.info("[bold green]Phase 1, Part 3:[/bold green] Structure and tech stack agents completed")
+
+        initial_results = [
+            dependency_result,
+            structure_result,
+            tech_stack_result,
+        ]
 
         # Return the combined results.
         return {

@@ -8,6 +8,10 @@ from collections.abc import Sequence
 from typing import Any
 from unittest.mock import patch
 
+from agentrules.config.prompts.phase_1_prompts import (
+    DEPENDENCY_CATALOG_PROMPT,
+    DEPENDENCY_KNOWLEDGE_GAP_PROMPT,
+)
 from agentrules.core.analysis.phase_1 import Phase1Analysis
 
 
@@ -57,6 +61,41 @@ def _stub_architect_factory(phase: str, **kwargs: Any) -> _StaticAgent:  # pragm
 
 
 class Phase1ResearcherGuardrailsTests(unittest.IsolatedAsyncioTestCase):
+    def test_dependency_prompt_catalog_when_researcher_disabled(self) -> None:
+        with patch("agentrules.core.analysis.phase_1.get_architect_for_phase") as mock_factory:
+            def _factory(*args: Any, **kwargs: Any) -> _StaticAgent:
+                return _StaticAgent(kwargs.get("name", "Agent"))
+
+            mock_factory.side_effect = _factory
+            analyzer = Phase1Analysis(researcher_enabled=False)
+
+        self.assertIsNone(analyzer.researcher_architect)
+        dependency_call = mock_factory.call_args_list[0]
+        dependency_kwargs = dependency_call.kwargs
+        self.assertEqual(dependency_kwargs["role"], DEPENDENCY_CATALOG_PROMPT["role"])
+        self.assertEqual(
+            dependency_kwargs["responsibilities"],
+            DEPENDENCY_CATALOG_PROMPT["responsibilities"],
+        )
+
+    def test_dependency_prompt_knowledge_gap_when_researcher_enabled(self) -> None:
+        with patch("agentrules.core.analysis.phase_1.get_architect_for_phase") as mock_factory, \
+                patch("agentrules.core.analysis.phase_1.get_researcher_architect", return_value=_StaticAgent("Researcher Agent")):
+            def _factory(*args: Any, **kwargs: Any) -> _StaticAgent:
+                return _StaticAgent(kwargs.get("name", "Agent"))
+
+            mock_factory.side_effect = _factory
+            analyzer = Phase1Analysis(researcher_enabled=True)
+
+        self.assertIsNotNone(analyzer.researcher_architect)
+        dependency_call = mock_factory.call_args_list[0]
+        dependency_kwargs = dependency_call.kwargs
+        self.assertEqual(dependency_kwargs["role"], DEPENDENCY_KNOWLEDGE_GAP_PROMPT["role"])
+        self.assertEqual(
+            dependency_kwargs["responsibilities"],
+            DEPENDENCY_KNOWLEDGE_GAP_PROMPT["responsibilities"],
+        )
+
     async def test_researcher_skipped_when_no_tools_requested(self) -> None:
         with patch("agentrules.core.analysis.phase_1.get_architect_for_phase", side_effect=_stub_architect_factory), \
                 patch("agentrules.core.analysis.phase_1.get_researcher_architect", return_value=_NoToolResearcher()):

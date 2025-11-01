@@ -153,7 +153,7 @@ Adjust presets through the CLI (`agentrules configure --models`) or by editing `
 
 - `core/agent_tools/tool_manager.py` normalizes JSON tool schemas for each provider.
 - `config/tools.py` exposes `TOOL_SETS` and a `with_tools_enabled` helper for models that accept function/tool calls.
-- Tavily search (`tavily_web_search`) ships as the default researcher tool. Set `TAVILY_API_KEY` and leave the researcher mode on `Auto` so Phase 1 opts in automatically; switch to `On` or `Off` from the models wizard’s Researcher entry. When disabled (or no key is present), documentation research is skipped; offline runs force the researcher on for smoke coverage.
+- Tavily search (`tavily_web_search`) ships as the default researcher tool. Set `TAVILY_API_KEY` and leave the researcher mode on `Auto` so Phase 1 opts in automatically; switch to `On` or `Off` from the models wizard’s Researcher entry. When disabled (or no key is present), documentation research is skipped; offline runs force the researcher on for smoke coverage. The dependency agent automatically downgrades from “knowledge gaps” mode to its legacy full catalog so downstream agents still receive usable dependency data when research is unavailable.
 
 ## 🧱 Project Architecture
 

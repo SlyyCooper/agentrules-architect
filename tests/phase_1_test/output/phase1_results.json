@@ -2,12 +2,12 @@
   "phase": "Initial Discovery",
   "initial_findings": [
     {
-      "agent": "Structure Agent",
-      "findings": "Offline analysis by Structure Agent"
-    },
-    {
       "agent": "Dependency Agent",
       "findings": "Offline analysis by Dependency Agent"
+    },
+    {
+      "agent": "Structure Agent",
+      "findings": "Offline analysis by Structure Agent"
     },
     {
       "agent": "Tech Stack Agent",
