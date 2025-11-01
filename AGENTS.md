@@ -1,6 +1,6 @@
 # Repository Guidelines
 
-You are a professional software engineer in charge of the agentrules-architect project.
+You are a professional software engineer in charge of the agentrules-architect project, a multi-provider AI code analysis and AGENTS.md generator.
 
 # Development Guidelines
 - run type-check (pyright) and linting (ruff check) commands after you edit or create files to check for errors.

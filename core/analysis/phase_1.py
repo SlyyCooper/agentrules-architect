@@ -106,16 +106,33 @@ class Phase1Analysis:
         Returns:
             Dictionary containing the results of the phase
         """
-        # Create a context object for the initial analysis.
-        initial_context = {
-            "tree_structure": tree,
-            "package_info": package_info
-        }
-
         logging.info("[bold]Phase 1, Part 1:[/bold] Starting initial analysis with 3 agents")
 
+        structure_context = {
+            "tree_structure": tree,
+        }
+        dependency_context = {
+            "dependency_manifests": package_info.get("manifests", []),
+            "dependency_summary": package_info.get("summary", {}),
+        }
+        tech_stack_context = {
+            "tree_structure": tree,
+            "dependency_summary": package_info.get("summary", {}),
+        }
+
+        architect_contexts = [
+            structure_context,
+            dependency_context,
+            tech_stack_context,
+        ]
+
         # Run initial architects in parallel
-        architect_tasks = [architect.analyze(initial_context) for architect in self.initial_architects]
+        architect_tasks = [
+            architect.analyze(context)
+            for architect, context in zip(
+                self.initial_architects, architect_contexts, strict=True
+            )
+        ]
         initial_results = await asyncio.gather(*architect_tasks)
 
         logging.info("[bold green]Phase 1, Part 1:[/bold green] All initial agents have completed their analysis")
@@ -159,7 +176,8 @@ class Phase1Analysis:
         return {
             "phase": "Initial Discovery",
             "initial_findings": initial_results,
-            "documentation_research": research_findings
+            "documentation_research": research_findings,
+            "package_info": package_info,
         }
 
     async def _run_researcher_with_tools(

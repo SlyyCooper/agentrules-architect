@@ -38,6 +38,7 @@ from core.analysis import (
     Phase5Analysis,
 )
 from core.analysis.events import AnalysisEvent, AnalysisEventSink
+from core.utils.dependency_scanner import collect_dependency_info
 from core.utils.file_creation.cursorignore import create_cursorignore
 from core.utils.file_creation.phases_output import save_phase_outputs
 from core.utils.file_system.gitignore import load_gitignore_spec
@@ -243,7 +244,10 @@ class ProjectAnalyzer:
         )
         tree_for_analysis = _strip_tree_delimiters(tree_with_delimiters)
 
-        package_info: dict = {}
+        package_info = collect_dependency_info(
+            self.directory,
+            gitignore_spec=self.gitignore_spec,
+        )
 
         view.render_phase_header(
             "Phase 1 · Initial Discovery",
