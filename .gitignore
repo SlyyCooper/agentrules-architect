@@ -25,6 +25,8 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.ruff_cache/
+.pytest_cache/
 
 # Project specific
 project_tree_*
