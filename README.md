@@ -28,7 +28,7 @@ Version 3 rebrands the project from **CursorRules Architect** to **AgentRules Ar
 
 ## 🔥 v3 Highlights
 
-- ✨ **Rebrand & packaging** – published as the `agentrules` Python package with a slim `main.py` entrypoint.
+- ✨ **Rebrand & packaging** – ships with console-script and `python -m agentrules` entry points when installed from source.
 - 🧭 **Typer CLI overhaul** – `agentrules` launches an interactive main menu with subcommands for `analyze`, `configure`, and `keys`.
 - 🗂️ **Persistent settings** – API keys, model presets, logging, and output preferences live in `~/.config/agentrules/config.toml` (override with `AGENTRULES_CONFIG_DIR`).
 - 🧠 **Expanded provider matrix** – presets now cover Anthropic Claude 4.5, OpenAI o3/o4/GPT‑4.1/GPT‑5, Google Gemini 2.5, DeepSeek Reasoner & Chat, and xAI Grok 4 tiers.
@@ -96,10 +96,16 @@ agentrules --version
 agentrules analyze --offline tests/tests_input
 ```
 
-If you prefer isolated installs (e.g., CI), the package publishes as `agentrules`:
+Prefer module execution during development? Invoke the CLI with Python’s module flag—the package ships a `__main__` entry point:
 
 ```bash
-pip install agentrules
+python -m agentrules analyze /path/to/project
+```
+
+Need to skip local cloning? Install straight from GitHub (PyPI release pending):
+
+```bash
+pip install "git+https://github.com/slyycooper/agentrules-architect.git#egg=agentrules"
 ```
 
 ## 🔐 Configure API Keys
@@ -166,7 +172,7 @@ MODEL_PRESET_DEFAULTS = {
 }
 ```
 
-Adjust presets through the CLI (`agentrules configure --models`) or by editing `config/agents.py`. At runtime the values populate `MODEL_CONFIG`, which the pipeline reads in `agentrules/analyzer.py`.
+Adjust presets through the CLI (`agentrules configure --models`) or by editing `config/agents.py`. At runtime the values populate `MODEL_CONFIG`, which the pipeline consumes while resolving phase architects (`src/agentrules/core/agents/factory/factory.py`).
 
 ## 🧠 Reasoning & Advanced Configuration
 
@@ -188,7 +194,6 @@ Adjust presets through the CLI (`agentrules configure --models`) or by editing `
 - `core/` – provider-specific architects (`core/agents`), analysis phases (`core/analysis`), tool adapters (`core/agent_tools`), streaming primitives, and filesystem utilities (`core/SNAPSHOT.md`).
 - `config/` – preset definitions, exclusions, prompts, and tool bindings (`config/SNAPSHOT.md`).
 - `tests/` – live/offline smoke tests, phase-specific suites, provider fixtures, and unit coverage for helpers and stubs.
-- `main.py` – minimalist entrypoint that exposes the Typer app.
 - `pyproject.toml` – package metadata, scripts, Ruff/Pyright config, and dependency declarations.
 
 ## 🧾 Output Artifacts

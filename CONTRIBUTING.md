@@ -171,16 +171,16 @@ We welcome feature suggestions! Please open an issue with:
 
 ### Running the Project
 
-You can run the main script using:
+You can run the CLI entry point after installing dependencies with:
 
 ```bash
-python main.py -p /path/to/your/project
+agentrules analyze /path/to/your/project
 ```
 
-To use the new architecture (recommended):
+Prefer invoking the module directly (no console script)? Use:
 
 ```bash
-python main.py -p /path/to/your/project -n
+python -m agentrules analyze /path/to/your/project
 ```
 
 ### Testing

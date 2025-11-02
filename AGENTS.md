@@ -1,21 +1,3 @@
-You are the Final Architect, responsible for analyzing the project and formulating the `AGENTS.md` file.
-
-It is November 2025 and you are developing with the brand new 2025 ARS-1 specification for agent rules. You must ensure the generated `AGENTS.md` is strictly compliant.
-
-# Technical Environment
-- You are currently analyzing a Python 3.11+ project.
-- The project leverages multiple LLM providers: Anthropic, OpenAI, Google GenAI (Gemini), DeepSeek, and xAI (Grok).
-- The CLI is built using Typer, Rich, and Questionary.
-- Configuration is managed via TOML files and environment variables.
-- Web search capabilities are provided by Tavily.
-- Static analysis is enforced with Ruff and Pyright.
-- The project uses `pyproject.toml` for modern dependency management.
-
-# Your Requirements:
-1.  **Prioritize** addressing the identified weaknesses, especially token limit management and LLM output parsing fragility, by incorporating strategies into the `AGENTS.md`.
-2.  ONLY USE Python 3.11+ code examples when necessary.
-3.  Maintain professionalism
-
 # Knowledge Framework
 
 # 1. IDENTITY ESTABLISHMENT
@@ -324,8 +306,7 @@ As you learn new patterns or encounter corrections related to the `agentrules-ar
 │       │   ├── 🐍 __init__.py
 │       │   ├── 🐍 app.py
 │       │   ├── 🐍 bootstrap.py
-│       │   ├── 🐍 context.py
-│       │   └── 📝 SNAPSHOT.md
+│       │   └── 🐍 context.py
 │       ├── 📁 config
 │       │   ├── 📁 prompts
 │       │   │   ├── 🐍 __init__.py
@@ -338,7 +319,6 @@ As you learn new patterns or encounter corrections related to the `agentrules-ar
 │       │   ├── 🐍 __init__.py
 │       │   ├── 🐍 agents.py
 │       │   ├── 🐍 exclusions.py
-│       │   ├── 📝 SNAPSHOT.md
 │       │   └── 🐍 tools.py
 │       ├── 📁 core
 │       │   ├── 📁 agent_tools
@@ -395,8 +375,7 @@ As you learn new patterns or encounter corrections related to the `agentrules-ar
 │       │   │   │   ├── 🐍 response_parser.py
 │       │   │   │   └── 🐍 tooling.py
 │       │   │   ├── 🐍 __init__.py
-│       │   │   ├── 🐍 base.py
-│       │   │   └── 📝 SNAPSHOT.md
+│       │   │   └── 🐍 base.py
 │       │   ├── 📁 analysis
 │       │   │   ├── 🐍 __init__.py
 │       │   │   ├── 🐍 events.py
@@ -457,137 +436,12 @@ As you learn new patterns or encounter corrections related to the `agentrules-ar
 │       │   │   ├── 🐍 constants.py
 │       │   │   ├── 🐍 model_config_helper.py
 │       │   │   └── 🐍 offline.py
-│       │   ├── 🐍 __init__.py
-│       │   └── 📝 SNAPSHOT.md
+│       │   └── 🐍 __init__.py
 │       ├── 🐍 __init__.py
 │       ├── 🐍 __main__.py
 │       ├── 🐍 analyzer.py
 │       ├── 🐍 config_service.py
 │       ├── 🐍 logging_setup.py
-│       ├── 🐍 model_config.py
-│       └── 📝 SNAPSHOT.md
-├── 📁 tests
-│   ├── 📁 fakes
-│   │   └── 🐍 vendor_responses.py
-│   ├── 📁 final_analysis_test
-│   │   ├── 📁 output
-│   │   │   ├── 📝 cursor_rules.md
-│   │   │   └── 📋 final_analysis_results.json
-│   │   ├── 🐍 __init__.py
-│   │   ├── 📋 fa_test_input.json
-│   │   ├── 🐍 run_test.py
-│   │   ├── 🐍 test_date.py
-│   │   ├── 🐍 test_final_analysis.py
-│   │   └── 🐍 test_final_offline.py
-│   ├── 📁 live
-│   │   └── 🐍 test_live_smoke.py
-│   ├── 📁 offline
-│   │   ├── 🐍 __init__.py
-│   │   └── 🐍 test_offline_smoke.py
-│   ├── 📁 phase_1_test
-│   │   ├── 📁 output
-│   │   │   └── 📋 phase1_results.json
-│   │   ├── 🐍 __init__.py
-│   │   ├── 🐍 run_test.py
-│   │   ├── 🐍 test_phase1_offline.py
-│   │   └── 🐍 test_phase1_researcher_guards.py
-│   ├── 📁 phase_2_test
-│   │   ├── 📁 output
-│   │   │   ├── 📋 analysis_plan.xml
-│   │   │   └── 📋 phase2_results.json
-│   │   ├── 🐍 __init__.py
-│   │   ├── 🐍 run_test.py
-│   │   ├── 📋 test2_input.json
-│   │   └── 🐍 test_phase2_offline.py
-│   ├── 📁 phase_3_test
-│   │   ├── 📁 output
-│   │   │   └── 📋 phase3_results.json
-│   │   ├── 🐍 __init__.py
-│   │   ├── 🐍 debug_parser.py
-│   │   ├── 🐍 run_test.py
-│   │   ├── 📋 test3_input.json
-│   │   ├── 📋 test3_input.xml
-│   │   └── 🐍 test_phase3_offline.py
-│   ├── 📁 phase_4_test
-│   │   ├── 📁 output
-│   │   │   ├── 📝 analysis.md
-│   │   │   └── 📋 phase4_results.json
-│   │   ├── 🐍 __init__.py
-│   │   ├── 🐍 run_test.py
-│   │   ├── 📋 test4_input.json
-│   │   └── 🐍 test_phase4_offline.py
-│   ├── 📁 phase_5_test
-│   │   ├── 📁 output
-│   │   │   ├── 📝 consolidated_report.md
-│   │   │   └── 📋 phase5_results.json
-│   │   ├── 🐍 __init__.py
-│   │   ├── 🐍 run_test.py
-│   │   ├── 📋 test5_input.json
-│   │   └── 🐍 test_phase5_offline.py
-│   ├── 📁 tests_input
-│   │   ├── 📝 AGENTS.md
-│   │   ├── 🌐 index.html
-│   │   └── 🐍 main.py
-│   ├── 📁 unit
-│   │   ├── 📁 agents
-│   │   │   ├── 🐍 __init__.py
-│   │   │   ├── 🐍 test_anthropic_agent_parsing.py
-│   │   │   ├── 🐍 test_anthropic_request_builder.py
-│   │   │   ├── 🐍 test_deepseek_agent_parsing.py
-│   │   │   ├── 🐍 test_deepseek_helpers.py
-│   │   │   ├── 🐍 test_gemini_agent_parsing.py
-│   │   │   ├── 🐍 test_openai_agent_parsing.py
-│   │   │   └── 🐍 test_openai_helpers.py
-│   │   ├── 🐍 __init__.py
-│   │   ├── 🐍 test_agent_parser_basic.py
-│   │   ├── 🐍 test_agents_anthropic_parse.py
-│   │   ├── 🐍 test_agents_deepseek.py
-│   │   ├── 🐍 test_agents_gemini_error.py
-│   │   ├── 🐍 test_agents_openai_params.py
-│   │   ├── 🐍 test_cli.py
-│   │   ├── 🐍 test_config_service.py
-│   │   ├── 🐍 test_dependency_scanner.py
-│   │   ├── 🐍 test_dependency_scanner_registry.py
-│   │   ├── 🐍 test_file_retriever.py
-│   │   ├── 🐍 test_model_config_helper.py
-│   │   ├── 🐍 test_model_overrides.py
-│   │   ├── 🐍 test_phase_events.py
-│   │   ├── 🐍 test_phases_edges.py
-│   │   ├── 🐍 test_streaming_support.py
-│   │   ├── 🐍 test_tavily_tool.py
-│   │   └── 🐍 test_tool_manager.py
-│   ├── 📁 utils
-│   │   ├── 📁 inputs
-│   │   │   └── 📄 .cursorrules
-│   │   ├── 📁 outputs
-│   │   │   └── 📝 AGENTS.md
-│   │   ├── 🐍 __init__.py
-│   │   ├── 🐍 clean_cr_test.py
-│   │   ├── 🐍 offline_stubs.py
-│   │   └── 🐍 run_tree_generator.py
-│   ├── 🐍 __init__.py
-│   ├── 📝 SNAPSHOT.md
-│   ├── 🐍 test_cli_services.py
-│   ├── 🐍 test_env.py
-│   ├── 🐍 test_openai_responses.py
-│   └── 🐍 test_smoke_discovery.py
-├── 📁 typings
-│   ├── 📁 google
-│   │   ├── 📁 genai
-│   │   │   ├── 📄 __init__.pyi
-│   │   │   └── 📄 types.pyi
-│   │   ├── 📁 protobuf
-│   │   │   ├── 📄 __init__.pyi
-│   │   │   └── 📄 struct_pb2.pyi
-│   │   └── 📄 __init__.pyi
-│   ├── 📁 tavily
-│   │   └── 📄 __init__.pyi
-│   └── 📁 tomli_w
-│       └── 📄 __init__.pyi
-├── 🐍 conftest.py
-├── 📝 CONTRIBUTING.md
-├── 🐍 main.py
-├── 📄 pyproject.toml
-├── 📄 requirements-dev.txt
-└── 📝 SNAPSHOT.md
+│       └──  🐍 model_config.py
+├── 📁 tests/
 </project_structure>
