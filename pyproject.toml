@@ -1,0 +1,95 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agentrules"
+version = "3.0.0"
+description = "Interactive CLI for the CursorRules Architect multi-phase analysis pipeline."
+readme = "README.md"
+authors = [{name = "SlyyCooper"}]
+license = {text = "MIT"}
+requires-python = ">=3.11.9"
+keywords = ["cursor", "ai", "analysis", "cli", "agents"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent"
+]
+dependencies = [
+  "anthropic",
+  "rich",
+  "openai",
+  "google-genai",
+  "protobuf>=4.25",
+  "python-dotenv",
+  "tavily-python",
+  "typer>=0.12",
+  "questionary>=2.0",
+  "platformdirs>=4.0",
+  "pathspec>=0.12",
+  "tomli; python_version < '3.11'",
+  "tomli-w"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest",
+  "pytest-asyncio",
+  "pytest-mock",
+  "ruff>=0.6",
+  "pyright>=1.1.380",
+]
+
+[project.scripts]
+agentrules = "agentrules.cli:app"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["agentrules*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = [
+  "E",  # pycodestyle errors
+  "F",  # pyflakes
+  "W",  # pycodestyle warnings
+  "B",  # flake8-bugbear
+  "UP", # pyupgrade
+  "I",  # isort
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.per-file-ignores]
+"src/agentrules/config/prompts/__init__.py" = ["F403"]
+"src/agentrules/config/prompts/*.py" = ["E501"]
+"tests/**" = ["E402", "E501"]
+"tests/unit/agents/test_gemini_agent_parsing.py" = ["E702"]
+
+[tool.pyright]
+include = ["src", "tests"]
+extraPaths = ["typings", "src"]
+exclude = [
+  "build",
+  "dist",
+  ".venv",
+  "venv_agentrules",
+  "venv_agentrules_legacy",
+  ".mypy_cache",
+  ".pytest_cache",
+]
+pythonVersion = "3.11"
+typeCheckingMode = "standard"
+reportMissingImports = "error"
+reportMissingTypeStubs = "warning"
+disableBytesTypePromotions = true
+venvPath = "."
+venv = ".venv"

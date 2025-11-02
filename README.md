@@ -1,415 +1,225 @@
-# 🦊 CursorRules Architect V2
+# 🤖 AgentRules Architect v3
 
 <div align="center">
 
 [![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-[![OpenAI](https://img.shields.io/badge/OpenAI-o1%20%7C%20o3--mini%20%7C%20gpt--4o-blue.svg)](https://openai.com/)
-[![Anthropic](https://img.shields.io/badge/Anthropic-claude--3.7--sonnet-purple.svg)](https://www.anthropic.com/)
-[![DeepSeek](https://img.shields.io/badge/DeepSeek-deepseek--reasoner-red.svg)](https://deepseek.com/)
-[![Google](https://img.shields.io/badge/Google-gemini--2.0--flash%20%7C%20gemini--2.5--pro-green.svg)](https://ai.google.dev/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-o3%20%7C%20o4--mini%20%7C%20gpt--5-blue.svg)](https://openai.com/)
+[![Anthropic](https://img.shields.io/badge/Anthropic-claude--4.5%20family-purple.svg)](https://www.anthropic.com/)
+[![DeepSeek](https://img.shields.io/badge/DeepSeek-reasoner-red.svg)](https://deepseek.com/)
+[![Google](https://img.shields.io/badge/Google-gemini--2.5--flash%20%7C%20gemini--2.5--pro-green.svg)](https://ai.google.dev/)
+[![xAI](https://img.shields.io/badge/xAI-grok--4--family-black.svg)](https://x.ai/)
 [![Built By](https://img.shields.io/badge/Built%20By-SlyyCooper-orange.svg)](https://github.com/SlyyCooper)
 
-**Your Multi-Provider AI Code Analysis and .cursorrules Generator 🚀**
+**Your multi-provider AI code analysis and AGENTS.md generator 🚀**
 
-[Features](#-features) • [Requirements](#-requirements) • [Installation](#-installation) • [Usage](#-usage) • [Configuration](#-configuration) • [Architecture](#-architecture) • [Output](#-output) • [Contributing](#-contributing)
+[Demo](#-cli-demo) • [Highlights](#-v3-highlights) • [Features](#-feature-overview) • [Requirements](#-requirements) • [Installation](#-installation) • [CLI](#-cli-at-a-glance) • [Configuration](#-configuration--preferences) • [Architecture](#-project-architecture) • [Outputs](#-output-artifacts) • [Development](#-development-workflow)
 
 </div>
 
-## 🌟 What's This All About?
+## 🎥 CLI Demo
 
-CursorRules Architect V2 is an advanced multi-agent system that analyzes your codebase using a powerful combination of AI models from Anthropic, OpenAI, DeepSeek, and Google. It performs a comprehensive six-phase analysis to understand your project's structure, dependencies, patterns, and architectural decisions. The result is a detailed report and automatically generated `.cursorrules` and `.cursorignore` files customized for your project.
+<video controls src="docs/assets/media/demo.mov" width="100%">
+  Your browser does not support the video tag. You can download it [here](docs/assets/media/demo.mov).
+</video>
 
-## ✨ Features
+## Why AgentRules Architect?
 
-- 🌐 **Multi-Provider Support** - Leverage AI models from Anthropic, OpenAI, DeepSeek, and Google Gemini
-- 🧠 **Enhanced Reasoning** - Different reasoning modes (enabled/disabled, low/medium/high, temperature)
-- 🤖 **Dynamic Agents** - Creates specialized analysis agents based on your specific codebase
-- 🔍 **Six-Phase Analysis** - Structured pipeline that builds comprehensive understanding
-- 🔄 **Async Processing** - Parallel agent execution for faster analysis
-- 📊 **Detailed Metrics** - Track analysis time and token usage
-- 📝 **Comprehensive Documentation** - Generated reports for each phase and component
-- 🎨 **Intelligent Rule Generation** - Creates optimal `.cursorrules` files for your coding style
-- 📑 **Multi-Format Output** - Separate markdown files for each analysis phase
-- 🚫 **Smart Exclusions** - Customizable patterns to focus analysis on relevant files
-- 🔧 **Fully Configurable** - Easy to customize which models are used for each phase
+Version 3 rebrands the project from **CursorRules Architect** to **AgentRules Architect** to match the standardized `AGENTS.md` contract used across modern AI coding agents. The rename comes with a fresh Typer-powered CLI, a persistent configuration service, broader provider support (including xAI Grok and OpenAI GPT‑5 presets), and a tooling layer that keeps the six-phase analysis pipeline predictable, auditable, and ready for enterprise use.
 
-## 🛠️ Requirements
+## 🔥 v3 Highlights
 
-- Python 3.8+
-- API keys for at least one of the supported providers:
-  - Anthropic API key with access to `claude-3-7-sonnet-20250219`
-  - OpenAI API key with access to `o1`, `o3-mini`, or `gpt-4.1`
-  - DeepSeek API key with access to DeepSeek Reasoner
-  - Google API key with access to `gemini-2.0-flash` or `gemini-2.5-pro-exp-03-25`
-- Dependencies:
-  - `anthropic` for Anthropic API access
-  - `openai` for OpenAI API access
-  - `google-generativeai` for Google Gemini API access
-  - `rich` for beautiful terminal output
-  - `click` for CLI interface
-  - `pathlib` for path manipulation
-  - `asyncio` for async operations
+- ✨ **Rebrand & packaging** – ships with console-script and `python -m agentrules` entry points when installed from source.
+- 🧭 **Typer CLI overhaul** – `agentrules` launches an interactive main menu with subcommands for `analyze`, `configure`, and `keys`.
+- 🗂️ **Persistent settings** – API keys, model presets, logging, and output preferences live in `~/.config/agentrules/config.toml` (override with `AGENTRULES_CONFIG_DIR`).
+- 🧠 **Expanded provider matrix** – presets now cover Anthropic Claude 4.5, OpenAI o3/o4/GPT‑4.1/GPT‑5, Google Gemini 2.5, DeepSeek Reasoner & Chat, and xAI Grok 4 tiers.
+- 🔌 **Unified tool management** – the new `ToolManager` adapts JSON tool schemas for each provider; Tavily web search is available to researcher agents with one toggle.
+- 🧪 **Deterministic offline mode** – `agentrules analyze --offline` (or `OFFLINE=1`) swaps in dummy architects and stubbed Tavily responses for CI and local smoke tests.
+- ✅ **Test & quality backbone** – 200+ unit/integration tests, Pyright, Ruff, and offline stubs provide confidence without hitting live APIs.
+
+## ✨ Feature Overview
+
+- 🌐 Multi-provider orchestration with consistent streaming telemetry.
+- 🔍 Six-phase pipeline: discovery → planning → deep dives → synthesis → consolidation → final AGENTS.md generation.
+- 🧩 Researcher tooling via Tavily search with provider-aware tool translation.
+- 📊 Rich terminal UI (Rich) showing per-agent progress, duration, and failures in real time.
+- 🪵 Configurable outputs: `AGENTS.md`, `.cursorignore`, and per-phase markdown/json snapshots.
+- 🔧 Declarative model presets plus runtime overrides via CLI or TOML.
+
+## 🧮 Analysis Pipeline
+
+All CLI entry points ultimately execute the `AnalysisPipeline` orchestrator (`src/agentrules/core/pipeline`) that wires the six analysis phases together and streams progress events to the Rich console.
+
+1. **Phase 1 – Initial Discovery** (`core/analysis/phase_1.py`) inventories the repo tree, surfaces tech stack signals, and collects dependency metadata that later phases reuse.
+2. **Phase 2 – Methodical Planning** (`core/analysis/phase_2.py`) asks the configured model to draft an XML-ish agent plan, then parses it into structured agent definitions (with a safe fallback extractor).
+3. **Phase 3 – Deep Analysis** (`core/analysis/phase_3.py`) spins up specialized architects per agent definition, hydrates them with file excerpts, and runs them in parallel; if no plan exists it falls back to three default agents.
+4. **Phase 4 – Synthesis** (`core/analysis/phase_4.py`) stitches together Phase 3 findings, elevates cross-cutting insights, and flags follow-up prompts for the final steps.
+5. **Phase 5 – Consolidation** (`core/analysis/phase_5.py`) produces a canonical report object that downstream tooling (rules generator, metrics, exporters) consumes.
+6. **Final Analysis** (`core/analysis/final_analysis.py`) produces the narrative summary that drives `AGENTS.md`, output toggles, and console highlights.
+
+The pipeline captures metrics (elapsed time, agent counts) and hands them to the output writer so offline runs and full analyses share the same persistence path.
+
+## 🛠 Requirements
+
+- Python **3.11.9+** (matches Pyright target and packaged metadata).
+- API key(s) for at least one provider:
+  - Anthropic (`claude-haiku-4.5`, `claude-sonnet-4.5`, `claude-opus-4.1`, …)
+  - OpenAI (`o3`, `o4-mini`, `gpt-4.1`, `gpt-5`)
+  - DeepSeek (`deepseek-reasoner`, `deepseek-chat`)
+  - Google (`gemini-2.5-flash`, `gemini-2.5-pro`)
+  - xAI (`grok-4` family)
+  - Tavily (optional, enables live web search tooling)
+- Core dependencies: `anthropic`, `openai`, `google-genai`, `tavily-python`, `rich`, `typer`, `questionary`, `platformdirs`, `pathspec`, `python-dotenv`, `protobuf`.
+- Dev tooling: `pytest`, `pytest-asyncio`, `pytest-mock`, `ruff`, `pyright`.
 
 ## 📦 Installation
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/slyycooper/cursorrules-architect.git
-   cd cursorrules-architect
-   ```
-
-2. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Set Up API Keys**
-   ```bash
-   # Linux/macOS
-   export ANTHROPIC_API_KEY='your-anthropic-api-key'
-   export OPENAI_API_KEY='your-openai-api-key'
-   export DEEPSEEK_API_KEY='your-deepseek-api-key'
-   export GEMINI_API_KEY='your-gemini-api-key'
-
-   # Windows
-   set ANTHROPIC_API_KEY=your-anthropic-api-key
-   set OPENAI_API_KEY=your-openai-api-key
-   set DEEPSEEK_API_KEY=your-deepseek-api-key
-   set GEMINI_API_KEY=your-gemini-api-key
-   ```
-
-   Alternatively, create a `.env` file in the project root:
-   ```
-   ANTHROPIC_API_KEY=your-anthropic-api-key
-   OPENAI_API_KEY=your-openai-api-key
-   DEEPSEEK_API_KEY=your-deepseek-api-key
-   GEMINI_API_KEY=your-gemini-api-key
-   ```
-
-## 🚀 Usage
-
-### Basic Usage
+### Clone & bootstrap
 
 ```bash
-python main.py -p /path/to/your/project
+git clone https://github.com/slyycooper/agentrules-architect.git
+cd agentrules-architect
+python -m venv .venv
+source .venv/bin/activate
+pip install -e ".[dev]"
 ```
 
-### Advanced Options
+Need a one-liner? Use the helper script:
 
 ```bash
-# Specify output location (deprecated, now uses standardized output)
-python main.py -p /path/to/your/project -o output.txt
+./scripts/bootstrap_env.sh           # set PYTHON_BIN=/abs/path/to/python to override interpreter
 ```
 
-## ⚙️ Configuration
+### Quick smoke test
 
-CursorRules Architect V2 allows you to customize which AI models are used for each analysis phase through the `config/agents.py` file.
+```bash
+agentrules --version
+agentrules analyze --offline tests/tests_input
+```
 
-### Model Configurations
+Prefer module execution during development? Invoke the CLI with Python’s module flag—the package ships a `__main__` entry point:
 
-The system defines several predefined model configurations you can use:
+```bash
+python -m agentrules analyze /path/to/project
+```
+
+Need to skip local cloning? Install straight from GitHub (PyPI release pending):
+
+```bash
+pip install "git+https://github.com/slyycooper/agentrules-architect.git#egg=agentrules"
+```
+
+## 🔐 Configure API Keys
+
+Run the interactive configurator to store credentials securely:
+
+```bash
+agentrules configure
+```
+
+- Keys are saved to `~/.config/agentrules/config.toml` (override with `AGENTRULES_CONFIG_DIR`).
+- Values are mirrored into environment variables on the next launch.
+- Use `agentrules configure --provider openai` for quick single-key updates.
+- Show current status with:
+
+```bash
+agentrules keys
+```
+
+## 🧭 CLI At A Glance
+
+- `agentrules` – interactive main menu (analyze, configure models/outputs, check keys).
+- `agentrules analyze /path/to/project` – full six-phase analysis.
+  - `--offline` switches to deterministic dummy providers (also enabled via `OFFLINE=1`).
+- `agentrules configure --models` – assign presets per phase with guided prompts; the Phase 1 → Researcher entry lets you toggle the agent On/Off once a Tavily key is configured.
+- `agentrules configure --outputs` – toggle `.cursorignore`, `phases_output/`, and custom rules filename.
+- `agentrules configure --logging` – set verbosity (`quiet`, `standard`, `verbose`) or export via `AGENTRULES_LOG_LEVEL`.
+
+## ⚙️ Configuration & Preferences
+
+- **Config file**: `~/.config/agentrules/config.toml`
+  - `providers` – API keys per provider.
+  - `models` – preset IDs applied to each phase (`phase1`, `phase2`, `final`, `researcher`, …).
+  - `outputs` – `generate_cursorignore`, `generate_phase_outputs`, `rules_filename`.
+  - `features` – `researcher_mode` (`on`/`off`) to control Phase 1 web research (managed from the Researcher row in the models wizard).
+  - `exclusions` – add/remove directories, files, or extensions; choose to respect `.gitignore`.
+- **Runtime helpers** (via `agentrules/core/configuration/manager.py`):
+  - `ConfigManager.get_effective_exclusions()` resolves overrides with defaults from `config/exclusions.py`.
+  - `ConfigManager.should_generate_phase_outputs()` and related methods toggle output writers in `core/utils/file_creation`.
+- **Environment variables**:
+  - `AGENTRULES_CONFIG_DIR` – alternate config root.
+  - `AGENTRULES_LOG_LEVEL` – overrides persisted verbosity.
+  - `AGENTRULES_RULES_FILENAME` (alias of `DEFAULT_RULES_FILENAME`) – customize the generated `AGENTS.md` name.
+
+## 🧠 Model Presets & Providers
+
+Presets live in `config/agents.py` via the `MODEL_PRESETS` dictionary. Each preset bundles:
+
+- Provider (`ModelProvider`)
+- Model name plus reasoning/temperature configuration
+- Human-readable label and description for the CLI wizard
+
+Defaults favor `gemini-2.5-flash` for every phase, but you can mix providers. For example:
 
 ```python
-# Anthropic Configurations
-CLAUDE_BASIC = ModelConfig(
-    provider=ModelProvider.ANTHROPIC,
-    model_name="claude-3-7-sonnet-20250219",
-    reasoning=ReasoningMode.DISABLED
-)
-
-CLAUDE_WITH_REASONING = ModelConfig(
-    provider=ModelProvider.ANTHROPIC,
-    model_name="claude-3-7-sonnet-20250219",
-    reasoning=ReasoningMode.ENABLED
-)
-
-# OpenAI Configurations
-O1_HIGH = ModelConfig(
-    provider=ModelProvider.OPENAI,
-    model_name="o1",
-    reasoning=ReasoningMode.HIGH
-)
-
-O3_MINI_MEDIUM = ModelConfig(
-    provider=ModelProvider.OPENAI,
-    model_name="o3-mini",
-    reasoning=ReasoningMode.MEDIUM
-)
-
-GPT4_1_CREATIVE = ModelConfig(
-    provider=ModelProvider.OPENAI,
-    model_name="gpt-4.1",
-    reasoning=ReasoningMode.TEMPERATURE,
-    temperature=0.9
-)
-
-# DeepSeek Configurations
-DEEPSEEK_REASONER = ModelConfig(
-    provider=ModelProvider.DEEPSEEK,
-    model_name="deepseek-reasoner",
-    reasoning=ReasoningMode.ENABLED
-)
-
-# Gemini Configurations
-GEMINI_BASIC = ModelConfig(
-    provider=ModelProvider.GEMINI,
-    model_name="gemini-2.0-flash",
-    reasoning=ReasoningMode.DISABLED
-)
-
-GEMINI_WITH_REASONING = ModelConfig(
-    provider=ModelProvider.GEMINI,
-    model_name="gemini-2.5-pro-exp-03-25",
-    reasoning=ReasoningMode.ENABLED
-)
-```
-
-### Customizing Phase Models
-
-To change which model is used for each phase, simply update the `MODEL_CONFIG` dictionary:
-
-```python
-MODEL_CONFIG = {
-    "phase1": GEMINI_BASIC,                # Use Gemini-2.0-flash for Phase 1
-    "phase2": GEMINI_WITH_REASONING,       # Use Gemini-2.5-pro with reasoning for Phase 2
-    "phase3": CLAUDE_WITH_REASONING,       # Use Claude with reasoning for Phase 3
-    "phase4": O1_HIGH,                     # Use OpenAI's o1 with high reasoning for Phase 4
-    "phase5": DEEPSEEK_REASONER,           # Use DeepSeek Reasoner for Phase 5
-    "final": CLAUDE_WITH_REASONING,        # Use Claude with reasoning for final analysis
+MODEL_PRESET_DEFAULTS = {
+    "phase1": "gemini-flash",
+    "phase2": "claude-sonnet-reasoning",
+    "phase3": "o3-high",
+    "phase4": "deepseek-reasoner",
+    "phase5": "grok-4-fast-reasoning",
+    "final": "gpt5-high",
+    "researcher": "gemini-pro",
 }
 ```
 
-### Exclusion Settings
+Adjust presets through the CLI (`agentrules configure --models`) or by editing `config/agents.py`. At runtime the values populate `MODEL_CONFIG`, which the pipeline consumes while resolving phase architects (`src/agentrules/core/agents/factory/factory.py`).
 
-You can customize which files and directories are excluded from analysis by modifying `config/exclusions.py`:
+## 🧠 Reasoning & Advanced Configuration
 
-```python
-EXCLUDED_DIRS = {
-    'node_modules', '.next', '.git', 'venv', '__pycache__', 
-    'dist', 'build', '.vscode', '.idea', 'coverage',
-    # Add your custom directories here
-}
+- **Reasoning modes:** Anthropic presets toggle `ReasoningMode.ENABLED`/`DISABLED`, Gemini Pro/Flash Thinking use `ReasoningMode.DYNAMIC`, OpenAI o3/o4-mini/GPT‑5 expose `MINIMAL`→`HIGH` effort levels, GPT‑4.1 presets rely on `ReasoningMode.TEMPERATURE`, and DeepSeek Reasoner/xAI Grok fast reasoning ship with their baked-in reasoning defaults (`src/agentrules/core/types/models.py`).
+- **Agent planning:** Phase 2 generates agent manifests that Phase 3 converts into live architects; when parsing fails the fallback extractor and default agents keep the pipeline running (`core/analysis/phase_2.py`, `core/analysis/phase_3.py`).
+- **Provider-specific tools:** `create_researcher_config` enables Tavily-backed tool use for whichever preset you promote to the Researcher role, and the CLI’s Researcher row simply flips that on/off (`core/types/models.py`, `config/tools.py`).
+- **Prompt customization:** Fine-tune behaviour by editing the phase prompts under `src/agentrules/config/prompts/`—heavy modifications should stay aligned with the YAML/XML formats expected by the parser utilities.
+- **Direct overrides:** Advanced users can swap presets or tweak reasoning levels by modifying `MODEL_PRESETS`/`MODEL_PRESET_DEFAULTS` in `config/agents.py`; the configuration manager merges those with TOML overrides at runtime.
 
-EXCLUDED_FILES = {
-    'package-lock.json', 'yarn.lock', '.DS_Store', '.env',
-    # Add your custom files here
-}
+## 🔍 Tooling & Research Agents
 
-EXCLUDED_EXTENSIONS = {
-    '.jpg', '.jpeg', '.png', '.gif', '.ico', '.svg', 
-    '.pyc', '.pyo', '.pyd', '.so', '.db', '.sqlite',
-    # Add your custom extensions here
-}
-```
+- `core/agent_tools/tool_manager.py` normalizes JSON tool schemas for each provider.
+- `config/tools.py` exposes `TOOL_SETS` and a `with_tools_enabled` helper for models that accept function/tool calls.
+- Tavily search (`tavily_web_search`) ships as the default researcher tool. Add `TAVILY_API_KEY` in the provider settings to automatically enable the Researcher agent, then pick the model (or flip it back `Off`) from the models wizard’s Researcher entry. When disabled—or when no key is present—documentation research is skipped; offline runs still exercise the researcher stub for smoke coverage. The dependency agent automatically downgrades from “knowledge gaps” mode to its legacy full catalog so downstream agents still receive usable dependency data when research is unavailable.
 
-## 🏗️ Architecture
+## 🧱 Project Architecture
 
-CursorRules Architect V2 follows a sophisticated multi-phase analysis approach:
+- `agentrules/` – Typer CLI, interactive Questionary flows, Rich UI, configuration services, and pipeline runner (`agentrules/SNAPSHOT.md`).
+- `core/` – provider-specific architects (`core/agents`), analysis phases (`core/analysis`), tool adapters (`core/agent_tools`), streaming primitives, and filesystem utilities (`core/SNAPSHOT.md`).
+- `config/` – preset definitions, exclusions, prompts, and tool bindings (`config/SNAPSHOT.md`).
+- `tests/` – live/offline smoke tests, phase-specific suites, provider fixtures, and unit coverage for helpers and stubs.
+- `pyproject.toml` – package metadata, scripts, Ruff/Pyright config, and dependency declarations.
 
-### 1. Base Architecture
+## 🧾 Output Artifacts
 
-The system is built on a `BaseArchitect` abstract class that standardizes how different AI model providers are integrated:
+By default the pipeline produces:
 
-- `AnthropicArchitect` - Interface to Anthropic's Claude models
-- `OpenAIArchitect` - Interface to OpenAI's models (o1, o3-mini, gpt-4.1)
-- `DeepSeekArchitect` - Interface to DeepSeek's reasoning models
-- `GeminiArchitect` - Interface to Google's Gemini models
+- `AGENTS.md` (or your custom rules filename) – cleaned, standardized agent instructions.
+- `.cursorignore` – generated when enabled to keep editor agents focused on relevant files.
+- `phases_output/` – per-phase markdown/JSON snapshots for auditing and downstream automation.
+- Rich console logs summarizing model usage, timing, and file counts.
 
-Each architect implements standardized methods:
-- `analyze()` - Runs general analysis
-- `create_analysis_plan()` - Creates a detailed analysis plan (Phase 2)
-- `synthesize_findings()` - Synthesizes findings from deep analysis (Phase 4)
-- `consolidate_results()` - Consolidates all analysis results (Phase 5)
-- `final_analysis()` - Provides final architectural insights
+Toggle outputs with `agentrules configure --outputs` or via the config TOML.
 
-### 2. Analysis Pipeline
+## 🛠 Development Workflow
 
-#### Phase 1: Initial Discovery
-Performs initial exploration of the project structure, dependencies, and technology stack using specialized agents:
-- Structure Agent: Analyzes directory and file organization
-- Dependency Agent: Investigates package dependencies
-- Tech Stack Agent: Identifies frameworks and technologies
-
-#### Phase 2: Methodical Planning
-Creates a detailed analysis plan using findings from Phase 1:
-- Defines specialized agents with specific responsibilities
-- Assigns files to relevant agents based on expertise
-- Provides detailed instructions for deeper analysis
-- Outputs an XML-structured plan that guides Phase 3
-
-#### Phase 3: Deep Analysis
-The heart of the system - dynamically creates specialized agents based on Phase 2's output:
-- Each agent focuses on its assigned files and responsibilities
-- Agents run in parallel for efficiency
-- Performs in-depth analysis of code patterns, architecture, and dependencies
-- Falls back to predefined agents if Phase 2 doesn't provide valid definitions
-
-#### Phase 4: Synthesis
-Synthesizes findings from Phase 3 into cohesive insights:
-- Integrates agent findings into a holistic view
-- Identifies relationships between components
-- Highlights key architectural patterns
-- Updates analysis directions
-
-#### Phase 5: Consolidation
-Consolidates results from all previous phases into a comprehensive report:
-- Organizes findings by component/module
-- Creates comprehensive documentation
-- Prepares data for final analysis
-
-#### Final Analysis
-Provides high-level insights and recommendations:
-- System structure mapping
-- Architecture pattern identification
-- Relationship documentation
-- Improvement recommendations
-
-### 3. Reasoning Modes
-
-The system supports different reasoning modes depending on the model:
-
-- For Anthropic models:
-  - `ENABLED` - Use extended thinking capability
-  - `DISABLED` - Standard inference
-
-- For OpenAI models:
-  - For O1 and O3-mini:
-    - `LOW`/`MEDIUM`/`HIGH` - Different reasoning effort levels
-  - For gpt-4.1:
-    - `TEMPERATURE` - Use temperature-based sampling
-
-- For DeepSeek models:
-  - Always uses `ENABLED` reasoning mode
-  
-- For Gemini models:
-  - `ENABLED` - Uses the thinking-enabled experimental model variant
-  - `DISABLED` - Standard inference
-
-## 📂 Project Structure
-
-```
-cursorrules-architect/
-├── config/                      # Configuration settings
-│   ├── agents.py                # Model and agent configuration
-│   ├── exclusions.py            # Exclusion patterns for analysis
-│   ├── prompts/                 # Centralized prompt templates
-│       ├── phase_1_prompts.py   # Phase 1 agent prompts
-│       ├── phase_2_prompts.py   # Phase 2 planning prompts
-│       ├── phase_4_prompts.py   # Phase 4 synthesis prompts
-│       ├── phase_5_prompts.py   # Phase 5 consolidation prompts
-│       └── final_analysis_prompt.py # Final analysis prompts
-├── core/                        # Core functionality
-│   ├── agents/                  # Agent implementations
-│   │   ├── anthropic.py         # Anthropic agent implementation
-│   │   ├── base.py              # Base architect abstract class
-│   │   ├── deepseek.py          # DeepSeek agent implementation
-│   │   ├── gemini.py            # Google Gemini agent implementation
-│   │   └── openai.py            # OpenAI agent implementation
-│   ├── analysis/                # Analysis phase implementations
-│   │   ├── final_analysis.py    # Final Analysis phase
-│   │   ├── phase_1.py           # Initial Discovery phase
-│   │   ├── phase_2.py           # Methodical Planning phase
-│   │   ├── phase_3.py           # Deep Analysis phase
-│   │   ├── phase_4.py           # Synthesis phase
-│   │   └── phase_5.py           # Consolidation phase
-│   ├── types/                   # Type definitions
-│   │   └── agent_config.py      # Agent configuration types
-│   └── utils/                   # Utility functions and tools
-│       ├── file_creation/           # File creation utilities
-│       │   ├── cursorignore.py      # .cursorignore management
-│       │   ├── cursorrules.py       # .cursorrules management
-│       │   └── phases_output.py     # Phase output saving
-│       └── tools/                   # Tool utilities
-│           ├── agent_parser.py      # Parser for Phase 2 output
-│           ├── file_retriever.py    # File content retrieval
-│           └── tree_generator.py    # Directory tree generation
-├── main.py                      # Main entry point
-└── requirements.txt             # Project dependencies
-```
-
-## 📊 Output
-
-CursorRules Architect V2 generates a rich set of output files:
-
-```
-your-project/
-├── .cursorrules                 # Generated rules file for Cursor IDE
-├── .cursorignore                # Generated ignore patterns for Cursor IDE
-└── phases_output/               # Detailed phase outputs
-    ├── phase1_discovery.md      # Initial agent findings
-    ├── phase2_planning.md       # Planning document with agent assignments
-    ├── phase3_analysis.md       # Deep analysis results from dynamic agents
-    ├── phase4_synthesis.md      # Synthesized findings
-    ├── phase5_consolidation.md  # Consolidated report
-    ├── final_analysis.md        # Final recommendations
-    ├── complete_report.md       # Overview of all phases
-    └── metrics.md                  # Analysis metrics
-```
-
-### Analysis Metrics
-
-The system tracks performance metrics for the analysis:
-- Total analysis time
-- Token usage for phases using reasoning models
-- Per-agent execution times
-
-## 🛠️ Related Tools
-
-Check out [cursorrules-tools](https://github.com/SlyyCooper/cursorrules-tools) for additional utilities that can help with Cursor IDE development. This collection includes tools for managing `.cursorrules` and `.cursorignore` files, generating codebase snapshots, analyzing dependencies, and more.
-
-## 💡 Advanced Features
-
-### Dynamic Agent Creation
-
-The system's key innovation is the dynamic agent creation process:
-
-1. **Phase 2 (Planning)**: 
-   - Creates an XML-structured output defining specialized agents
-   - Each agent is assigned responsibilities and specific files
-
-2. **Agent Parser**:
-   - Parses the XML output from Phase 2
-   - Creates a structured representation of agent definitions
-   - Includes fallback mechanisms for handling parsing issues
-
-3. **Phase 3 (Dynamic Analysis)**:
-   - Creates AI agents based on the extracted definitions
-   - Each agent only analyzes its assigned files
-   - Uses custom-formatted prompts for each agent's role
-
-### Multi-Provider Flexibility
-
-You can run the system with one or more AI providers:
-
-- **Anthropic-only**: Set all phases to use Claude models
-- **OpenAI-only**: Set all phases to use o1, o3-mini, or gpt-4.1
-- **DeepSeek-only**: Set all phases to use DeepSeek Reasoner
-- **Gemini-only**: Set all phases to use Google Gemini models
-- **Mix and match**: Use different providers for different phases
-
-### Customizing Prompts
-
-For advanced users, you can modify the prompt templates in the `config/prompts/` directory to customize how agents analyze your code.
+- Install dev extras: `pip install -e .[dev]`
+- Format & lint: `ruff format . && ruff check .`
+- Static typing: `pyright`
+- Run targeted tests: `python tests/phase_3_test/run_test.py`
+- Full suite: `python -m unittest discover tests -v`
+- Keep docs and presets in sync when adding providers (`config/agents.py`, `config/tools.py`, `core/agents/*`).
 
 ## 🤝 Contributing
 
-We welcome contributions! Here's how you can help:
-
-1. **Fork the Repository**: Create your own fork to work on
-2. **Make Your Changes**: Implement your feature or bug fix
-3. **Run Tests**: Ensure your changes don't break existing functionality
-4. **Submit a Pull Request**: Send us your contributions for review
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+See `CONTRIBUTING.md` for detailed guidelines on workflows, testing, and pull request expectations. Issues and PRs are welcome—just ensure Ruff/Pyright/tests pass before submitting.
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details.
-
----
-
-<div align="center">
-
-Built with 💙 using [Claude-3.7-Sonnet](https://www.anthropic.com/claude), [o1](https://openai.com/), [DeepSeek Reasoner](https://deepseek.com/), and [Google Gemini](https://ai.google.dev/)
-
-</div>
+Released under the MIT License. See `LICENSE` for details.

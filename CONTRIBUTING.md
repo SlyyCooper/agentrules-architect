@@ -1,6 +1,6 @@
-# Contributing to CursorRules Architect V2
+# Contributing to AgentRules Architect v3
 
-Thank you for considering contributing to CursorRules Architect! Your help is greatly appreciated. This guide explains how you can contribute to the project.
+Thank you for considering contributing to AgentRules Architect! Your help is greatly appreciated. This guide explains how you can contribute to the project.
 
 ## Table of Contents
 
@@ -37,8 +37,8 @@ To get started with development, you'll need to set up your local environment.
 
 - Python 3.8 or higher
 - API keys for at least one of the following providers:
-  - OpenAI API key with access to `o1`, `o3-mini`, or `gpt-4.1`
-  - Anthropic API key with access to `claude-3-7-sonnet-20250219` 
+  - OpenAI API key with access to `o3`, `o4-mini`, or `gpt-4.1`
+  - Anthropic API key with access to at least one Claude 4 model (e.g., `claude-sonnet-4-5`, `claude-haiku-4-5`, or `claude-opus-4-1`)
   - DeepSeek API key with access to DeepSeek Reasoner
 - Git
 
@@ -171,16 +171,16 @@ We welcome feature suggestions! Please open an issue with:
 
 ### Running the Project
 
-You can run the main script using:
+You can run the CLI entry point after installing dependencies with:
 
 ```bash
-python main.py -p /path/to/your/project
+agentrules analyze /path/to/your/project
 ```
 
-To use the new architecture (recommended):
+Prefer invoking the module directly (no console script)? Use:
 
 ```bash
-python main.py -p /path/to/your/project -n
+python -m agentrules analyze /path/to/your/project
 ```
 
 ### Testing
@@ -199,14 +199,16 @@ python -m unittest discover tests
 
 ### Supported Models
 
-CursorRules Architect V2 supports multiple AI models:
+AgentRules Architect v3 supports multiple AI models:
 
 - **Anthropic**:
-  - `claude-3-7-sonnet-20250219` (with or without reasoning)
+  - `claude-haiku-4-5` (with or without thinking)
+  - `claude-sonnet-4-5` (with or without thinking)
+  - `claude-opus-4-1` (with or without thinking)
 
 - **OpenAI**:
-  - `o1` (with low/medium/high reasoning)
-  - `o3-mini` (with low/medium/high reasoning)
+  - `o3` (with low/medium/high reasoning)
+  - `o4-mini` (with low/medium/high reasoning)
   - `gpt-4.1` (with temperature control)
 
 - **DeepSeek**:
@@ -219,7 +221,7 @@ You can configure which models are used for each phase by modifying the `MODEL_C
 ```python
 MODEL_CONFIG = {
     "phase1": CLAUDE_WITH_REASONING,  # Use Claude with reasoning for Phase 1
-    "phase2": O1_HIGH,                # Use OpenAI's o1 with high reasoning for Phase 2
+    "phase2": O1_HIGH,                # Use OpenAI's o3 with high reasoning for Phase 2
     # etc.
 }
 ```
@@ -233,5 +235,3 @@ Be mindful of API usage costs when developing and testing. Consider using mock r
 If you have any questions or need assistance, feel free to open an issue or reach out to the maintainers.
 
 We look forward to your contributions!
-
-

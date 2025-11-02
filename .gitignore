@@ -10,6 +10,7 @@ __pycache__/
 *.so
 .Python
 env/
+.venv/
 build/
 develop-eggs/
 dist/
@@ -25,7 +26,18 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.ruff_cache/
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
 
 # Project specific
 project_tree_*
 our-notes/
+venv_agentrules/
+venv_agentrules_legacy/
+internal-docs/
+.claude/
+*SHAPSHOT.md

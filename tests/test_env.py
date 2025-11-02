@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+
 from dotenv import load_dotenv
-import sys
 
 # Load environment variables from .env file if it exists
 print("Checking for .env file...")
@@ -17,6 +17,7 @@ else:
 api_keys = {
     "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY"),
     "ANTHROPIC_API_KEY": os.environ.get("ANTHROPIC_API_KEY"),
+    "GOOGLE_API_KEY": os.environ.get("GOOGLE_API_KEY"),
     "GEMINI_API_KEY": os.environ.get("GEMINI_API_KEY"),
     "DEEPSEEK_API_KEY": os.environ.get("DEEPSEEK_API_KEY")
 }
@@ -29,4 +30,4 @@ for key_name, key_value in api_keys.items():
     else:
         print(f"✗ {key_name} is not set")
 
-print("\nEnvironment test complete.") 
+print("\nEnvironment test complete.")
