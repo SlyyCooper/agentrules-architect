@@ -123,7 +123,7 @@ Specify the technical environment, dependencies, and configuration details that 
 ```
 # Technical Environment
 - You are currently developing on a M3 Mac with an ARM processor but are hosting this code based on a Digital Ocean Droplet running ubuntu
-- The droplet has been set up to clone the github repo 'agenai' by 'SlyyCooper' via ssh
+- The droplet has been set up to clone the github repo 'agenai' by 'trevor-nichols' via ssh
 
 # Dependencies
 - React: 19.0.0

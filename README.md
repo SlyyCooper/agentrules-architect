@@ -8,7 +8,7 @@
 [![DeepSeek](https://img.shields.io/badge/DeepSeek-reasoner-red.svg)](https://deepseek.com/)
 [![Google](https://img.shields.io/badge/Google-gemini--2.5--flash%20%7C%20gemini--2.5--pro-green.svg)](https://ai.google.dev/)
 [![xAI](https://img.shields.io/badge/xAI-grok--4--family-black.svg)](https://x.ai/)
-[![Built By](https://img.shields.io/badge/Built%20By-SlyyCooper-orange.svg)](https://github.com/SlyyCooper)
+[![Built By](https://img.shields.io/badge/Built%20By-trevor-nichols-orange.svg)](https://github.com/trevor-nichols)
 
 **Your multi-provider AI code analysis and AGENTS.md generator 🚀**
 
@@ -73,7 +73,7 @@ The pipeline captures metrics (elapsed time, agent counts) and hands them to the
 ### Clone & bootstrap
 
 ```bash
-git clone https://github.com/slyycooper/agentrules-architect.git
+git clone https://github.com/trevor-nichols/agentrules-architect.git
 cd agentrules-architect
 python -m venv .venv
 source .venv/bin/activate
@@ -102,7 +102,7 @@ python -m agentrules analyze /path/to/project
 Need to skip local cloning? Install straight from GitHub (PyPI release pending):
 
 ```bash
-pip install "git+https://github.com/slyycooper/agentrules-architect.git#egg=agentrules"
+pip install "git+https://github.com/trevor-nichols/agentrules-architect.git#egg=agentrules"
 ```
 
 ## 🔐 Configure API Keys

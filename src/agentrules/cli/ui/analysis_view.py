@@ -142,7 +142,8 @@ class _AgentProgress:
         self.console = console
         self.color = color
         self.progress = Progress(
-            TextColumn("{task.fields[icon]}", justify="right"),
+            SpinnerColumn(spinner_name="dots12", style=color, finished_text=" "),
+            TextColumn("{task.fields[state_icon]}", justify="right"),
             TextColumn("{task.fields[name]}", style="bold white"),
             TextColumn("{task.fields[status]}", style="dim"),
             console=console,
@@ -172,7 +173,7 @@ class _AgentProgress:
             task_id = self.progress.add_task(
                 "",
                 total=None,
-                icon=f"[{self.color}]⏳[/]",
+                state_icon="",
                 name=name,
                 status=detail,
             )
@@ -192,10 +193,16 @@ class _AgentProgress:
                 status=status,
             )
             self.tasks[agent_id] = task_id
+        display_icon = ""
+        if icon and icon not in {"⏳", "⟳"}:
+            display_icon = f"[{icon_color}]{icon}[/]"
+            self.progress.stop_task(task_id)
+        else:
+            self.progress.start_task(task_id)
         self.progress.update(
             task_id,
             fields={
-                "icon": f"[{icon_color}]{icon}[/]",
+                "state_icon": display_icon,
                 "name": name,
                 "status": status,
             },

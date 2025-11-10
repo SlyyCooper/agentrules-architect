@@ -7,7 +7,7 @@ name = "agentrules"
 version = "3.0.0"
 description = "Interactive CLI for the CursorRules Architect multi-phase analysis pipeline."
 readme = "README.md"
-authors = [{name = "SlyyCooper"}]
+authors = [{name = "trevor-nichols"}]
 license = {text = "MIT"}
 requires-python = ">=3.11.9"
 keywords = ["cursor", "ai", "analysis", "cli", "agents"]

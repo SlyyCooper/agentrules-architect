@@ -47,7 +47,7 @@ To get started with development, you'll need to set up your local environment.
 Clone the repository:
 
 ```bash
-git clone https://github.com/SlyyCooper/cursorrules-architect.git
+git clone https://github.com/trevor-nichols/cursorrules-architect.git
 cd cursorrules-architect
 ```
 
