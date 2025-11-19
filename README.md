@@ -22,7 +22,7 @@
 
 ## Why AgentRules Architect?
 
-Version 3 rebrands the project from **CursorRules Architect** to **AgentRules Architect** to match the standardized `AGENTS.md` contract used across modern AI coding agents. The rename comes with a fresh Typer-powered CLI, a persistent configuration service, broader provider support (including xAI Grok and OpenAI GPT‑5 + GPT‑5.1 presets), and a tooling layer that keeps the six-phase analysis pipeline predictable, auditable, and ready for enterprise use.
+Version 3 rebrands the project from **CursorRules Architect** to **AgentRules Architect** to match the standardized `AGENTS.md` contract used across modern AI coding agents. The rename comes with a fresh Typer-powered CLI, a persistent configuration service, broader provider support (including xAI Grok and OpenAI GPT‑5 + GPT‑5.1 presets), and a tooling layer that keeps the six-phase analysis reliably consistent yet flexibly extensible to your project's unique needs.
 
 ## 🔥 v3 Highlights
 
